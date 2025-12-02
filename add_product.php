@@ -8,7 +8,8 @@ if($_SERVER['REQUEST_METHOD'] == "POST") {
     $product_name = ucfirst(trim($_POST['product_name']));
     $description = (trim($_POST['description']));
     $barcode = !empty(trim($_POST['barcode'])) ? (trim($_POST['barcode'])) : NULL;
-    $price = strtolower(trim($_POST['price']));
+    $cost_price = strtolower(trim($_POST['cost_price']));
+    $selling_price = strtolower(trim($_POST['selling_price']));
     $qty = strtolower(trim($_POST['qty']));
     $low_stock_alert = (trim($_POST['low_stock_alert']));
 
@@ -29,9 +30,14 @@ if($_SERVER['REQUEST_METHOD'] == "POST") {
         $errorMessages[] = "Description is required.";
     }
 
-    // Validate Price
-    if (empty($price) || !is_numeric($price) || $price <= 0) {
-        $errorMessages[] = "Invalid Price. Please enter a numeric value greater than 0.";
+    // Validate Cost Price
+    if (empty($cost_price) || !is_numeric($cost_price) || $cost_price < 0) {
+        $errorMessages[] = "Invalid Cost Price. Please enter a numeric value greater than or equal to 0.";
+    }
+
+    // Validate Selling Price
+    if (empty($selling_price) || !is_numeric($selling_price) || $selling_price <= 0) {
+        $errorMessages[] = "Invalid Selling Price. Please enter a numeric value greater than 0.";
     }
 
     // Validate Quantity
@@ -48,12 +54,13 @@ if($_SERVER['REQUEST_METHOD'] == "POST") {
         
         try {
             
-            $sql = "INSERT INTO products (name, description, barcode, price, qty_in_stock, low_stock_alert, reg_by, reg_date) VALUES (:product_name, :description, :barcode, :price, :qty_in_stock, :low_stock_alert, :reg_by, :reg_date)";
+            $sql = "INSERT INTO products (name, description, barcode, cost_price, selling_price, qty_in_stock, low_stock_alert, reg_by, reg_date) VALUES (:product_name, :description, :barcode, :cost_price, :selling_price, :qty_in_stock, :low_stock_alert, :reg_by, :reg_date)";
             $query = $dbh->prepare($sql);
             $query->bindParam(':product_name', $product_name, PDO::PARAM_STR);
             $query->bindParam(':description', $description, PDO::PARAM_STR);
             $query->bindParam(':barcode', $barcode, PDO::PARAM_STR);
-            $query->bindParam(':price', $price, PDO::PARAM_STR);
+            $query->bindParam(':cost_price', $cost_price, PDO::PARAM_STR);
+            $query->bindParam(':selling_price', $selling_price, PDO::PARAM_STR);
             $query->bindParam(':qty_in_stock', $qty, PDO::PARAM_INT);
             $query->bindParam(':low_stock_alert', $low_stock_alert, PDO::PARAM_INT);
             $query->bindParam(':reg_by', $admin, PDO::PARAM_STR);
@@ -124,7 +131,10 @@ if($_SERVER['REQUEST_METHOD'] == "POST") {
                     description: {
                         required: true
                     },
-                    price: {
+                    cost_price: {
+                        required: true
+                    },
+                    selling_price: {
                         required: true
                     },
                     qty: {
@@ -142,8 +152,11 @@ if($_SERVER['REQUEST_METHOD'] == "POST") {
                     description: {
                         required: "Enter Product Description"
                     },
-                    price: {
-                        required: "Enter Price "
+                    cost_price: {
+                        required: "Enter Cost Price"
+                    },
+                    selling_price: {
+                        required: "Enter Selling Price"
                     },
                     qty: {
                         required: "Enter Quantity "
@@ -257,9 +270,15 @@ if($_SERVER['REQUEST_METHOD'] == "POST") {
                                                     </div>                                    
                                                 </div>
                                                 <div class="form-group">
-                                                    <label>Price <span class="text-danger">*</span></label>
+                                                    <label>Cost Price <span class="text-danger">*</span></label>
                                                     <div class="input-group mb-3">
-                                                        <input type="text" class="form-control form-control-sm" name="price" id="price" placeholder="Enter Price">
+                                                        <input type="text" class="form-control form-control-sm" name="cost_price" id="cost_price" placeholder="Enter Cost Price">
+                                                    </div>                                    
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Selling Price <span class="text-danger">*</span></label>
+                                                    <div class="input-group mb-3">
+                                                        <input type="text" class="form-control form-control-sm" name="selling_price" id="selling_price" placeholder="Enter Selling Price">
                                                     </div>                                    
                                                 </div>
                                                 <div class="form-group">

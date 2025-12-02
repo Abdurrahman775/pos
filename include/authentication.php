@@ -9,7 +9,7 @@ if(session_status() === PHP_SESSION_NONE) {
 }
 
 // Include RBAC functions
-require_once('rbac.php');
+require_once(__DIR__ . '/rbac.php');
 
 // Session timeout in minutes (default: 30 minutes as per requirements)
 define('SESSION_TIMEOUT', 30);
