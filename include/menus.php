@@ -1,70 +1,89 @@
 <ul class="metismenu left-sidenav-menu">
     <li><a href="dashboard.php"><i data-feather="home" class="align-self-center menu-icon"></i><span>Dashboard</span></a></li>
-    <li><a href="sales_window.php"><i data-feather="shopping-cart" class="align-self-center menu-icon"></i><span>Sales Window</span><span ></i></a></li>      
+    <li><a href="sales_window.php"><i data-feather="shopping-cart" class="align-self-center menu-icon"></i><span>POS / Sales</span></a></li>      
+    
+    <!-- Transactions -->
+    <li><a href="transactions.php"><i data-feather="file-text" class="align-self-center menu-icon"></i><span>Transactions</span></a></li>
+    
+    <!-- Products -->
     <li>
-    <a href="javascript: void(0);"><i data-feather="shopping-bag" class="align-self-center menu-icon"></i><span>Products</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+    <a href="javascript: void(0);"><i data-feather="shopping-bag" class="align-self-center menu-icon"></i><span>Inventory</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
         <ul class="nav-second-level" aria-expanded="false">
             <li class="nav-item"><a class="nav-link" href="add_product.php"><i class="ti-control-record"></i>Add Product</a></li>
             <li class="nav-item"><a class="nav-link" href="all_products.php"><i class="ti-control-record"></i>All Products</a></li>
-            <li class="nav-item"><a class="nav-link" href="staff_pending.php"><i class="ti-control-record"></i>All Staff (Pending)</a></li>
-            <li class="nav-item"><a class="nav-link" href="deleted_staff.php"><i class="ti-control-record"></i>Former Staff</a></li>
-            <li class="nav-item"><a class="nav-link" href="enrolled_staff.php"><i class="ti-control-record"></i>Enrolled Staff</a></li>
+            <li class="nav-item"><a class="nav-link" href="manage_categories.php"><i class="ti-control-record"></i>Categories</a></li>
+            <li class="nav-item"><a class="nav-link" href="manage_suppliers.php"><i class="ti-control-record"></i>Suppliers</a></li>
+            <li class="nav-item"><a class="nav-link" href="low_stock_alerts.php"><i class="ti-control-record"></i>Low Stock Alerts</a></li>
         </ul>
-    </li>            
+    </li>
+    
+    <!-- Customers -->
+    <li>
+        <a href="javascript: void(0);"><i data-feather="users" class="align-self-center menu-icon"></i><span>Customers</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+        <ul class="nav-second-level" aria-expanded="false">
+            <li class="nav-item"><a class="nav-link" href="customers.php"><i class="ti-control-record"></i>All Customers</a></li>
+            <li class="nav-item"><a class="nav-link" href="add_customer.php"><i class="ti-control-record"></i>Add Customer</a></li>
+        </ul>
+    </li>
+    
+    <!-- Reports -->
+    <li><a href="reports_dashboard.php"><i data-feather="bar-chart-2" class="align-self-center menu-icon"></i><span>Reports</span></a></li>
+    
+    <!-- User Management -->
     <li>
         <a href="javascript: void(0);"><i data-feather="user-check" class="align-self-center menu-icon"></i><span>User Management</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
         <ul class="nav-second-level" aria-expanded="false">
             <li class="nav-item"><a class="nav-link" href="add_admin.php"><i class="ti-control-record"></i>New User</a></li>
-            <li class="nav-item"><a class="nav-link" href="admins.php"><i class="ti-control-record"></i>Users</a></li>
-        </ul>
-    </li>            
+            <li class="nav-item"><a class="nav-link" href="employees.php"><i class="ti-control-record"></i>All Users</a></li>
+<ul class="metismenu left-sidenav-menu">
+    <li><a href="dashboard.php"><i data-feather="home" class="align-self-center menu-icon"></i><span>Dashboard</span></a></li>
+    <li><a href="sales_window.php"><i data-feather="shopping-cart" class="align-self-center menu-icon"></i><span>POS / Sales</span></a></li>      
+    
+    <!-- Transactions -->
+    <li><a href="transactions.php"><i data-feather="file-text" class="align-self-center menu-icon"></i><span>Transactions</span></a></li>
+    
+    <!-- Products -->
     <li>
-        <a href="javascript: void(0);"><i data-feather="settings" class="align-self-center menu-icon"></i><span>Configuration</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+    <a href="javascript: void(0);"><i data-feather="shopping-bag" class="align-self-center menu-icon"></i><span>Inventory</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
         <ul class="nav-second-level" aria-expanded="false">
-            <li>
-                <a href="javascript: void(0);"><i class="ti-control-record"></i>Departments <span class="menu-arrow left-has-menu"><i class="mdi mdi-chevron-right"></i></span></a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    <li><a href="add_department.php">Add Department</a></li>                                    
-                    <li><a href="departments.php">Departments</a></li>
-                </ul>
-            </li>  
-            <li>
-                <a href="javascript: void(0);"><i class="ti-control-record"></i>Ranks <span class="menu-arrow left-has-menu"><i class="mdi mdi-chevron-right"></i></span></a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    <li><a href="add_rank.php">Add Rank</a></li>                                    
-                    <li><a href="ranks.php">Ranks</a></li>
-                </ul>
-            </li>  
-            <li>
-                <a href="javascript: void(0);"><i class="ti-control-record"></i>Qualifications <span class="menu-arrow left-has-menu"><i class="mdi mdi-chevron-right"></i></span></a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    <li><a href="add_qualification.php">Add Qualification</a></li>                                    
-                    <li><a href="qualifications.php">Qualifications</a></li>
-                </ul>
-            </li>  
-            <li>
-                <a href="javascript: void(0);"><i class="ti-control-record"></i>Appointment Types <span class="menu-arrow left-has-menu"><i class="mdi mdi-chevron-right"></i></span></a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    <li><a href="add_appointment_type.php">Add Appointment Type</a></li>                                    
-                    <li><a href="appointment_types.php">Appointment Types</a></li>
-                </ul>
-            </li>  
-            <li>
-                <a href="javascript: void(0);"><i class="ti-control-record"></i>Blood Groups <span class="menu-arrow left-has-menu"><i class="mdi mdi-chevron-right"></i></span></a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    <li><a href="add_blood_group.php">Add Blood Group</a></li>                                    
-                    <li><a href="blood_groups.php">Blood Groups</a></li>
-                </ul>
-            </li>  
-            <li>
-                <a href="javascript: void(0);"><i class="ti-control-record"></i>Grade Types <span class="menu-arrow left-has-menu"><i class="mdi mdi-chevron-right"></i></span></a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    <li><a href="add_grade_type.php">Add Grade Type</a></li>                                    
-                    <li><a href="grade_types.php">Grade Types</a></li>
-                </ul>
-            </li>  
-            <!-- <li class="nav-item"><a class="nav-link" href="javascript: void(0);"><i class="ti-control-record"></i>All Branches</a></li> -->
+            <li class="nav-item"><a class="nav-link" href="add_product.php"><i class="ti-control-record"></i>Add Product</a></li>
+            <li class="nav-item"><a class="nav-link" href="all_products.php"><i class="ti-control-record"></i>All Products</a></li>
+            <li class="nav-item"><a class="nav-link" href="manage_categories.php"><i class="ti-control-record"></i>Categories</a></li>
+            <li class="nav-item"><a class="nav-link" href="manage_suppliers.php"><i class="ti-control-record"></i>Suppliers</a></li>
+            <li class="nav-item"><a class="nav-link" href="low_stock_alerts.php"><i class="ti-control-record"></i>Low Stock Alerts</a></li>
         </ul>
     </li>
-    <li><a href="../logout.php"><i data-feather="log-out" class="align-self-center menu-icon"></i><span>Logout</span></a></li>           
+    
+    <!-- Customers -->
+    <li>
+        <a href="javascript: void(0);"><i data-feather="users" class="align-self-center menu-icon"></i><span>Customers</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+        <ul class="nav-second-level" aria-expanded="false">
+            <li class="nav-item"><a class="nav-link" href="customers.php"><i class="ti-control-record"></i>All Customers</a></li>
+            <li class="nav-item"><a class="nav-link" href="add_customer.php"><i class="ti-control-record"></i>Add Customer</a></li>
+        </ul>
+    </li>
+    
+    <!-- Reports -->
+    <li><a href="reports_dashboard.php"><i data-feather="bar-chart-2" class="align-self-center menu-icon"></i><span>Reports</span></a></li>
+    
+    <!-- User Management -->
+    <li>
+        <a href="javascript: void(0);"><i data-feather="user-check" class="align-self-center menu-icon"></i><span>User Management</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+        <ul class="nav-second-level" aria-expanded="false">
+            <li class="nav-item"><a class="nav-link" href="add_admin.php"><i class="ti-control-record"></i>New User</a></li>
+            <li class="nav-item"><a class="nav-link" href="employees.php"><i class="ti-control-record"></i>All Users</a></li>
+        </ul>
+    </li>
+    
+    <!-- Settings -->
+    <li>
+        <a href="javascript: void(0);"><i data-feather="settings" class="align-self-center menu-icon"></i><span>Settings</span><span class="menu-arrow"><i class="mdi mdi-chevron-right"></i></span></a>
+        <ul class="nav-second-level" aria-expanded="false">
+            <li class="nav-item"><a class="nav-link" href="system_settings.php"><i class="ti-control-record"></i>System Settings</a></li>
+            <li class="nav-item"><a class="nav-link" href="audit_log.php"><i class="ti-control-record"></i>Audit Log</a></li>
+            <li class="nav-item"><a class="nav-link" href="change_password.php"><i class="ti-control-record"></i>Change Password</a></li>
+        </ul>
+    </li>
+    
+    <li><a href="logout.php"><i data-feather="log-out" class="align-self-center menu-icon"></i><span>Logout</span></a></li>           
 </ul>

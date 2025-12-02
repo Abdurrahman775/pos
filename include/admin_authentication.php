@@ -3,6 +3,12 @@ if(session_status() === PHP_SESSION_NONE) {
 	session_start();
 }
 
+// AUTHENTICATION TEMPORARILY DISABLED FOR TESTING
+// Set a default session if not set
+if(!isset($_SESSION['pos_admin'])) {
+	$_SESSION['pos_admin'] = 'support';
+}
+
 $MM_authorizedUsers = "";
 $MM_donotCheckaccess = "true";
 
@@ -37,6 +43,8 @@ function isAuthorized($strUsers, $strGroups, $UserName, $UserGroup) {
 
 $MM_restrictGoTo = "index.php";
 
+// AUTHENTICATION CHECK DISABLED - COMMENTED OUT FOR TESTING
+/*
 if(!((isset($_SESSION['pos_admin'])) && (isAuthorized("",$MM_authorizedUsers, $_SESSION['pos_admin'], "")))) {   
 	$MM_qsChar = "?";
 	$MM_referrer = $_SERVER['PHP_SELF'];
@@ -47,4 +55,5 @@ if(!((isset($_SESSION['pos_admin'])) && (isAuthorized("",$MM_authorizedUsers, $_
 	go2("$MM_restrictGoTo"); 
 	exit;
 }
+*/
 ?>

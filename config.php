@@ -6,7 +6,7 @@ error_reporting(E_ALL & ~E_NOTICE);
 $con_hostname = "localhost";
 $con_database = "onlinepos";
 $con_username = "root";
-$con_password = "";
+$con_password = "309612.Aa";
 
 // "L" for live connection and "M" for maintenance mode
 $con_mode = strtoupper('l');
@@ -27,5 +27,15 @@ if($con_mode == strtoupper('L')) {
 	$location = "offline/index.php";
 	header("Location: {$location}");
 	exit();
+}
+
+// Include POS utility functions if they exist
+if(file_exists("include/pos_functions.php")) {
+	require_once("include/pos_functions.php");
+}
+
+// Include RBAC system if it exists
+if(file_exists("include/rbac.php")) {
+	require_once("include/rbac.php");
 }
 ?>
