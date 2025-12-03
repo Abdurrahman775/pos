@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Held Transactions Page
  * View and retrieve incomplete transactions
@@ -9,23 +10,23 @@ require("include/admin_authentication.php");
 require("include/admin_constants.php");
 
 // Handle retrieve action
-if(isset($_POST['retrieve_id'])) {
+if (isset($_POST['retrieve_id'])) {
     $held_id = intval($_POST['retrieve_id']);
-    
+
     // Get held transaction
     $sql = "SELECT * FROM held_transactions WHERE id = :id";
     $query = $dbh->prepare($sql);
     $query->bindParam(':id', $held_id, PDO::PARAM_INT);
     $query->execute();
     $held = $query->fetch(PDO::FETCH_ASSOC);
-    
-    if($held) {
+
+    if ($held) {
         // Delete from held transactions
         $sql = "DELETE FROM held_transactions WHERE id = :id";
         $query = $dbh->prepare($sql);
         $query->bindParam(':id', $held_id, PDO::PARAM_INT);
         $query->execute();
-        
+
         // Redirect to sales window with cart data
         $_SESSION['retrieve_cart'] = $held['cart_data'];
         $_SESSION['retrieve_customer_id'] = $held['customer_id'];
@@ -35,7 +36,7 @@ if(isset($_POST['retrieve_id'])) {
 }
 
 // Handle delete action
-if(isset($_POST['delete_id'])) {
+if (isset($_POST['delete_id'])) {
     $held_id = intval($_POST['delete_id']);
     $sql = "DELETE FROM held_transactions WHERE id = :id";
     $query = $dbh->prepare($sql);
@@ -46,6 +47,7 @@ if(isset($_POST['delete_id'])) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Held Transactions | POS System</title>
@@ -58,15 +60,9 @@ if(isset($_POST['delete_id'])) {
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-<div class="left-sidenav">
-    <div class="brand">
-        <?php require('template/brand_admin.php'); ?>
-    </div>
-    <div class="menu-content h-100" data-simplebar>
-        <?php require('include/menus.php'); ?>
-    </div>
-</div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -83,14 +79,14 @@ if(isset($_POST['delete_id'])) {
                         </div>
                     </div>
                 </div>
-                
-                <?php if(isset($success)): ?>
-                <div class="alert alert-success alert-dismissible fade show">
-                    <?php echo $success; ?>
-                    <button type="button" class="close" data-dismiss="alert">&times;</button>
-                </div>
+
+                <?php if (isset($success)): ?>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <?php echo $success; ?>
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    </div>
                 <?php endif; ?>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -130,36 +126,36 @@ if(isset($_POST['delete_id'])) {
                                             $query = $dbh->prepare($sql);
                                             $query->execute();
                                             $held_transactions = $query->fetchAll(PDO::FETCH_ASSOC);
-                                            
-                                            foreach($held_transactions as $held):
+
+                                            foreach ($held_transactions as $held):
                                                 $cart_data = json_decode($held['cart_data'], true);
                                                 $item_count = count($cart_data);
                                             ?>
-                                            <tr>
-                                                <td><?php echo $held['id']; ?></td>
-                                                <td><strong><?php echo htmlspecialchars($held['transaction_name']); ?></strong></td>
-                                                <td><?php echo htmlspecialchars($held['fname'] . ' ' . $held['sname']); ?></td>
-                                                <td><?php echo $held['customer_name'] ? htmlspecialchars($held['customer_name']) : '<em>Walk-in</em>'; ?></td>
-                                                <td><?php echo $item_count; ?> item(s)</td>
-                                                <td><?php echo date('d/m/Y H:i', strtotime($held['held_at'])); ?></td>
-                                                <td>
-                                                    <form method="POST" style="display: inline;">
-                                                        <input type="hidden" name="retrieve_id" value="<?php echo $held['id']; ?>">
-                                                        <button type="submit" class="btn btn-sm btn-success" title="Retrieve">
-                                                            <i class="fas fa-undo"></i> Retrieve
+                                                <tr>
+                                                    <td><?php echo $held['id']; ?></td>
+                                                    <td><strong><?php echo htmlspecialchars($held['transaction_name']); ?></strong></td>
+                                                    <td><?php echo htmlspecialchars($held['fname'] . ' ' . $held['sname']); ?></td>
+                                                    <td><?php echo $held['customer_name'] ? htmlspecialchars($held['customer_name']) : '<em>Walk-in</em>'; ?></td>
+                                                    <td><?php echo $item_count; ?> item(s)</td>
+                                                    <td><?php echo date('d/m/Y H:i', strtotime($held['held_at'])); ?></td>
+                                                    <td>
+                                                        <form method="POST" style="display: inline;">
+                                                            <input type="hidden" name="retrieve_id" value="<?php echo $held['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-success" title="Retrieve">
+                                                                <i class="fas fa-undo"></i> Retrieve
+                                                            </button>
+                                                        </form>
+                                                        <button class="btn btn-sm btn-info" onclick="viewCart(<?php echo htmlspecialchars($held['id']); ?>, <?php echo htmlspecialchars($held['cart_data']); ?>)" title="View Items">
+                                                            <i class="fas fa-eye"></i>
                                                         </button>
-                                                    </form>
-                                                    <button class="btn btn-sm btn-info" onclick="viewCart(<?php echo htmlspecialchars($held['id']); ?>, <?php echo htmlspecialchars($held['cart_data']); ?>)" title="View Items">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this held transaction?');">
-                                                        <input type="hidden" name="delete_id" value="<?php echo $held['id']; ?>">
-                                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
+                                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this held transaction?');">
+                                                            <input type="hidden" name="delete_id" value="<?php echo $held['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -174,7 +170,7 @@ if(isset($_POST['delete_id'])) {
             </footer>
         </div>
     </div>
-    
+
     <!-- View Cart Modal -->
     <div class="modal fade" id="viewCartModal" tabindex="-1">
         <div class="modal-dialog">
@@ -191,7 +187,7 @@ if(isset($_POST['delete_id'])) {
             </div>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -199,19 +195,21 @@ if(isset($_POST['delete_id'])) {
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#heldTable').DataTable({
-            pageLength: 25,
-            order: [[5, 'desc']]
+        $(document).ready(function() {
+            $('#heldTable').DataTable({
+                pageLength: 25,
+                order: [
+                    [5, 'desc']
+                ]
+            });
         });
-    });
-    
-    function viewCart(heldId, cartData) {
-        let html = '<ul class="list-group">';
-        cartData.forEach(item => {
-            html += `
+
+        function viewCart(heldId, cartData) {
+            let html = '<ul class="list-group">';
+            cartData.forEach(item => {
+                html += `
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                         <strong>${item.name}</strong><br>
@@ -220,12 +218,13 @@ if(isset($_POST['delete_id'])) {
                     <span class="badge badge-primary badge-pill">Qty: ${item.quantity}</span>
                 </li>
             `;
-        });
-        html += '</ul>';
-        
-        $('#cartItemsView').html(html);
-        $('#viewCartModal').modal('show');
-    }
+            });
+            html += '</ul>';
+
+            $('#cartItemsView').html(html);
+            $('#viewCartModal').modal('show');
+        }
     </script>
 </body>
+
 </html>

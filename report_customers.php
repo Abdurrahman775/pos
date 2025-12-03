@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Customer Report Page
  */
@@ -27,6 +28,7 @@ $customers = $query->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Customer Report | POS System</title>
@@ -39,11 +41,9 @@ $customers = $query->fetchAll(PDO::FETCH_ASSOC);
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -60,7 +60,7 @@ $customers = $query->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -79,20 +79,20 @@ $customers = $query->fetchAll(PDO::FETCH_ASSOC);
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($customers as $c): ?>
-                                            <tr>
-                                                <td><?php echo htmlspecialchars($c['name']); ?></td>
-                                                <td><?php echo htmlspecialchars($c['phone']); ?></td>
-                                                <td><?php echo htmlspecialchars($c['email'] ?? '-'); ?></td>
-                                                <td><?php echo $c['total_transactions']; ?></td>
-                                                <td><?php echo format_currency($dbh, $c['total_spent']); ?></td>
-                                                <td><?php echo $c['last_purchase'] ? date('d M Y', strtotime($c['last_purchase'])) : 'Never'; ?></td>
-                                                <td>
-                                                    <a href="customer_details.php?id=<?php echo $c['id']; ?>" class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-eye"></i> View
-                                                    </a>
-                                                </td>
-                                            </tr>
+                                            <?php foreach ($customers as $c): ?>
+                                                <tr>
+                                                    <td><?php echo htmlspecialchars($c['name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($c['phone']); ?></td>
+                                                    <td><?php echo htmlspecialchars($c['email'] ?? '-'); ?></td>
+                                                    <td><?php echo $c['total_transactions']; ?></td>
+                                                    <td><?php echo format_currency($dbh, $c['total_spent']); ?></td>
+                                                    <td><?php echo $c['last_purchase'] ? date('d M Y', strtotime($c['last_purchase'])) : 'Never'; ?></td>
+                                                    <td>
+                                                        <a href="customer_details.php?id=<?php echo $c['id']; ?>" class="btn btn-sm btn-primary">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -107,7 +107,7 @@ $customers = $query->fetchAll(PDO::FETCH_ASSOC);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -116,11 +116,14 @@ $customers = $query->fetchAll(PDO::FETCH_ASSOC);
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
-    $(document).ready(function() {
-        $('#customerTable').DataTable({
-            order: [[4, 'desc']] // Sort by Total Spent by default
+        $(document).ready(function() {
+            $('#customerTable').DataTable({
+                order: [
+                    [4, 'desc']
+                ] // Sort by Total Spent by default
+            });
         });
-    });
     </script>
 </body>
+
 </html>

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Top Products Report Page
  */
@@ -19,6 +20,7 @@ $top_products = get_top_selling_products($dbh, $limit, $period);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Top Products Report | POS System</title>
@@ -31,11 +33,9 @@ $top_products = get_top_selling_products($dbh, $limit, $period);
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -52,7 +52,7 @@ $top_products = get_top_selling_products($dbh, $limit, $period);
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -77,7 +77,7 @@ $top_products = get_top_selling_products($dbh, $limit, $period);
                                     </div>
                                     <button type="submit" class="btn btn-primary">Filter</button>
                                 </form>
-                                
+
                                 <div class="table-responsive">
                                     <table id="topProductsTable" class="table table-striped table-bordered">
                                         <thead>
@@ -90,17 +90,17 @@ $top_products = get_top_selling_products($dbh, $limit, $period);
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php 
+                                            <?php
                                             $rank = 1;
-                                            foreach($top_products as $p): 
+                                            foreach ($top_products as $p):
                                             ?>
-                                            <tr>
-                                                <td><?php echo $rank++; ?></td>
-                                                <td><?php echo htmlspecialchars($p['name']); ?></td>
-                                                <td><?php echo format_currency($dbh, $p['selling_price']); ?></td>
-                                                <td><?php echo $p['total_sold']; ?></td>
-                                                <td><?php echo format_currency($dbh, $p['revenue']); ?></td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo $rank++; ?></td>
+                                                    <td><?php echo htmlspecialchars($p['name']); ?></td>
+                                                    <td><?php echo format_currency($dbh, $p['selling_price']); ?></td>
+                                                    <td><?php echo $p['total_sold']; ?></td>
+                                                    <td><?php echo format_currency($dbh, $p['revenue']); ?></td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -115,7 +115,7 @@ $top_products = get_top_selling_products($dbh, $limit, $period);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -124,13 +124,14 @@ $top_products = get_top_selling_products($dbh, $limit, $period);
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
-    $(document).ready(function() {
-        $('#topProductsTable').DataTable({
-            searching: false,
-            paging: false,
-            info: false
+        $(document).ready(function() {
+            $('#topProductsTable').DataTable({
+                searching: false,
+                paging: false,
+                info: false
+            });
         });
-    });
     </script>
 </body>
+
 </html>

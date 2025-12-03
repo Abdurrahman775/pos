@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Inventory Report Page
  */
@@ -27,13 +28,13 @@ $total_cost_value = 0;
 $total_sales_value = 0;
 $low_stock_count = 0;
 
-foreach($products as $p) {
+foreach ($products as $p) {
     $qty = $p['qty_in_stock']; // Using qty_in_stock as per add_product.php
     $total_items += $qty;
     $total_cost_value += ($qty * $p['cost_price']);
     $total_sales_value += ($qty * $p['selling_price']);
-    
-    if($qty <= $p['low_stock_alert']) {
+
+    if ($qty <= $p['low_stock_alert']) {
         $low_stock_count++;
     }
 }
@@ -42,6 +43,7 @@ $potential_profit = $total_sales_value - $total_cost_value;
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Inventory Report | POS System</title>
@@ -54,11 +56,9 @@ $potential_profit = $total_sales_value - $total_cost_value;
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -75,7 +75,7 @@ $potential_profit = $total_sales_value - $total_cost_value;
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row mb-4">
                     <div class="col-md-3">
                         <div class="card bg-light">
@@ -110,7 +110,7 @@ $potential_profit = $total_sales_value - $total_cost_value;
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -130,27 +130,27 @@ $potential_profit = $total_sales_value - $total_cost_value;
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($products as $p): 
+                                            <?php foreach ($products as $p):
                                                 $qty = $p['qty_in_stock'];
                                                 $cost_val = $qty * $p['cost_price'];
                                                 $sales_val = $qty * $p['selling_price'];
                                             ?>
-                                            <tr>
-                                                <td><?php echo htmlspecialchars($p['name']); ?></td>
-                                                <td><?php echo htmlspecialchars($p['category_name'] ?? '-'); ?></td>
-                                                <td><?php echo $qty; ?></td>
-                                                <td><?php echo format_currency($dbh, $p['cost_price']); ?></td>
-                                                <td><?php echo format_currency($dbh, $p['selling_price']); ?></td>
-                                                <td><?php echo format_currency($dbh, $cost_val); ?></td>
-                                                <td><?php echo format_currency($dbh, $sales_val); ?></td>
-                                                <td>
-                                                    <?php if($qty <= $p['low_stock_alert']): ?>
-                                                        <span class="badge badge-danger">Low Stock</span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-success">In Stock</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo htmlspecialchars($p['name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($p['category_name'] ?? '-'); ?></td>
+                                                    <td><?php echo $qty; ?></td>
+                                                    <td><?php echo format_currency($dbh, $p['cost_price']); ?></td>
+                                                    <td><?php echo format_currency($dbh, $p['selling_price']); ?></td>
+                                                    <td><?php echo format_currency($dbh, $cost_val); ?></td>
+                                                    <td><?php echo format_currency($dbh, $sales_val); ?></td>
+                                                    <td>
+                                                        <?php if ($qty <= $p['low_stock_alert']): ?>
+                                                            <span class="badge badge-danger">Low Stock</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-success">In Stock</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -165,7 +165,7 @@ $potential_profit = $total_sales_value - $total_cost_value;
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -174,9 +174,10 @@ $potential_profit = $total_sales_value - $total_cost_value;
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
-    $(document).ready(function() {
-        $('#inventoryTable').DataTable();
-    });
+        $(document).ready(function() {
+            $('#inventoryTable').DataTable();
+        });
     </script>
 </body>
+
 </html>

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Audit Log Page
  * View system activity logs
@@ -10,6 +11,7 @@ require("include/admin_constants.php");
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Audit Log | POS System</title>
@@ -22,11 +24,9 @@ require("include/admin_constants.php");
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -42,7 +42,7 @@ require("include/admin_constants.php");
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -72,32 +72,32 @@ require("include/admin_constants.php");
                                             $query = $dbh->prepare($sql);
                                             $query->execute();
                                             $logs = $query->fetchAll(PDO::FETCH_ASSOC);
-                                            
-                                            foreach($logs as $log):
-                                                $user_display = $log['fname'] && $log['sname'] 
-                                                    ? $log['fname'] . ' ' . $log['sname'] 
+
+                                            foreach ($logs as $log):
+                                                $user_display = $log['fname'] && $log['sname']
+                                                    ? $log['fname'] . ' ' . $log['sname']
                                                     : $log['username'];
                                             ?>
-                                            <tr>
-                                                <td><?php echo $log['id']; ?></td>
-                                                <td><?php echo date('d/m/Y H:i:s', strtotime($log['log_date'])); ?></td>
-                                                <td><?php echo htmlspecialchars($user_display); ?></td>
-                                                <td>
-                                                    <?php
-                                                    $action_badges = [
-                                                        'LOGIN' => '<span class="badge badge-success">Login</span>',
-                                                        'LOGOUT' => '<span class="badge badge-secondary">Logout</span>',
-                                                        'CREATE' => '<span class="badge badge-primary">Create</span>',
-                                                        'UPDATE' => '<span class="badge badge-info">Update</span>',
-                                                        'DELETE' => '<span class="badge badge-danger">Delete</span>',
-                                                        'VIEW' => '<span class="badge badge-light">View</span>'
-                                                    ];
-                                                    echo $action_badges[$log['action']] ?? '<span class="badge badge-dark">' . htmlspecialchars($log['action']) . '</span>';
-                                                    ?>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($log['description']); ?></td>
-                                                <td><?php echo htmlspecialchars($log['ip_address']); ?></td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo $log['id']; ?></td>
+                                                    <td><?php echo date('d/m/Y H:i:s', strtotime($log['log_date'])); ?></td>
+                                                    <td><?php echo htmlspecialchars($user_display); ?></td>
+                                                    <td>
+                                                        <?php
+                                                        $action_badges = [
+                                                            'LOGIN' => '<span class="badge badge-success">Login</span>',
+                                                            'LOGOUT' => '<span class="badge badge-secondary">Logout</span>',
+                                                            'CREATE' => '<span class="badge badge-primary">Create</span>',
+                                                            'UPDATE' => '<span class="badge badge-info">Update</span>',
+                                                            'DELETE' => '<span class="badge badge-danger">Delete</span>',
+                                                            'VIEW' => '<span class="badge badge-light">View</span>'
+                                                        ];
+                                                        echo $action_badges[$log['action']] ?? '<span class="badge badge-dark">' . htmlspecialchars($log['action']) . '</span>';
+                                                        ?>
+                                                    </td>
+                                                    <td><?php echo htmlspecialchars($log['description']); ?></td>
+                                                    <td><?php echo htmlspecialchars($log['ip_address']); ?></td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -112,7 +112,7 @@ require("include/admin_constants.php");
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -120,14 +120,17 @@ require("include/admin_constants.php");
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#auditTable').DataTable({
-            pageLength: 25,
-            order: [[0, 'desc']]
+        $(document).ready(function() {
+            $('#auditTable').DataTable({
+                pageLength: 25,
+                order: [
+                    [0, 'desc']
+                ]
+            });
         });
-    });
     </script>
 </body>
+
 </html>

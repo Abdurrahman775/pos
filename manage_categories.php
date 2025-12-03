@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Category Management Page
  * Manage product categories and subcategories
@@ -16,12 +17,12 @@ $error = '';
 $success = '';
 
 // Handle add category
-if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_category'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_category'])) {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
     $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
-    
-    if(empty($name)) {
+
+    if (empty($name)) {
         $error = 'Category name is required';
     } else {
         try {
@@ -32,19 +33,19 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_category'])) {
             $query->bindParam(':description', $description, PDO::PARAM_STR);
             $query->bindParam(':parent_id', $parent_id, PDO::PARAM_INT);
             $query->bindParam(':reg_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
-            
-            if($query->execute()) {
+
+            if ($query->execute()) {
                 log_activity($dbh, 'ADD_CATEGORY', "Added category: $name");
                 $success = 'Category added successfully!';
             }
-        } catch(PDOException $e) {
+        } catch (PDOException $e) {
             $error = 'Error adding category: ' . $e->getMessage();
         }
     }
 }
 
 // Handle delete category
-if(isset($_GET['delete']) && is_numeric($_GET['delete'])) {
+if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     $cat_id = $_GET['delete'];
     try {
         // Check if category has products
@@ -53,19 +54,19 @@ if(isset($_GET['delete']) && is_numeric($_GET['delete'])) {
         $query->bindParam(':cat_id', $cat_id, PDO::PARAM_INT);
         $query->execute();
         $count = $query->fetchColumn();
-        
-        if($count > 0) {
+
+        if ($count > 0) {
             $error = "Cannot delete category. It has $count product(s) associated with it.";
         } else {
             $sql = "UPDATE categories SET is_active = 0 WHERE id = :cat_id";
             $query = $dbh->prepare($sql);
             $query->bindParam(':cat_id', $cat_id, PDO::PARAM_INT);
-            if($query->execute()) {
+            if ($query->execute()) {
                 log_activity($dbh, 'DELETE_CATEGORY', "Deleted category ID: $cat_id");
                 $success = 'Category deleted successfully!';
             }
         }
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         $error = 'Error deleting category: ' . $e->getMessage();
     }
 }
@@ -78,6 +79,7 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Manage Categories | POS System</title>
@@ -90,11 +92,9 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -111,21 +111,21 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                
-                <?php if($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <?php echo $error; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $error; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
-                <?php if($success): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <?php echo $success; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($success): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $success; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
+
                 <div class="row">
                     <div class="col-lg-4">
                         <div class="card">
@@ -138,25 +138,26 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
                                         <label for="name">Category Name <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="name" name="name" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="description">Description</label>
                                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="parent_id">Parent Category (Optional)</label>
                                         <select class="form-control" id="parent_id" name="parent_id">
                                             <option value="">-- No Parent (Main Category) --</option>
-                                            <?php foreach($categories as $cat): ?>
-                                                <?php if(empty($cat['parent_id'])): // Only show main categories ?>
+                                            <?php foreach ($categories as $cat): ?>
+                                                <?php if (empty($cat['parent_id'])): // Only show main categories 
+                                                ?>
                                                     <option value="<?php echo $cat['id']; ?>"><?php echo htmlspecialchars($cat['name']); ?></option>
                                                 <?php endif; ?>
                                             <?php endforeach; ?>
                                         </select>
                                         <small class="form-text text-muted">Leave blank to create a main category</small>
                                     </div>
-                                    
+
                                     <button type="submit" name="add_category" class="btn btn-primary btn-block">
                                         <i class="fas fa-plus mr-1"></i> Add Category
                                     </button>
@@ -164,7 +165,7 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-8">
                         <div class="card">
                             <div class="card-header">
@@ -184,7 +185,7 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($categories as $category): 
+                                            <?php foreach ($categories as $category):
                                                 // Count products in this category
                                                 $sql = "SELECT COUNT(*) FROM products WHERE category_id = :cat_id AND is_active = 1";
                                                 $query = $dbh->prepare($sql);
@@ -192,30 +193,30 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
                                                 $query->execute();
                                                 $product_count = $query->fetchColumn();
                                             ?>
-                                            <tr>
-                                                <td><?php echo $category['id']; ?></td>
-                                                <td><?php echo htmlspecialchars($category['name']); ?></td>
-                                                <td><?php echo htmlspecialchars($category['description'] ?? '-'); ?></td>
-                                                <td>
-                                                    <?php if(empty($category['parent_id'])): ?>
-                                                        <span class="badge badge-primary">Main Category</span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-secondary">Subcategory</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><?php echo $product_count; ?></td>
-                                                <td>
-                                                    <a href="edit_category.php?id=<?php echo $category['id']; ?>" 
-                                                       class="btn btn-sm btn-primary" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <a href="?delete=<?php echo $category['id']; ?>" 
-                                                       class="btn btn-sm btn-danger" title="Delete"
-                                                       onclick="return confirm('Are you sure you want to delete this category?');">
-                                                        <i class="fas fa-trash"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo $category['id']; ?></td>
+                                                    <td><?php echo htmlspecialchars($category['name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($category['description'] ?? '-'); ?></td>
+                                                    <td>
+                                                        <?php if (empty($category['parent_id'])): ?>
+                                                            <span class="badge badge-primary">Main Category</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-secondary">Subcategory</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td><?php echo $product_count; ?></td>
+                                                    <td>
+                                                        <a href="edit_category.php?id=<?php echo $category['id']; ?>"
+                                                            class="btn btn-sm btn-primary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="?delete=<?php echo $category['id']; ?>"
+                                                            class="btn btn-sm btn-danger" title="Delete"
+                                                            onclick="return confirm('Are you sure you want to delete this category?');">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -230,7 +231,7 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -238,13 +239,14 @@ $categories = $query->fetchAll(PDO::FETCH_ASSOC);
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#categoriesTable').DataTable({
-            pageLength: 25
+        $(document).ready(function() {
+            $('#categoriesTable').DataTable({
+                pageLength: 25
+            });
         });
-    });
     </script>
 </body>
+
 </html>

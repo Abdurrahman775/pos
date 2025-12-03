@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Reports Dashboard
  * Central hub for all reporting and analytics
@@ -25,7 +26,7 @@ try {
     $query->execute();
     $result = $query->fetch(PDO::FETCH_ASSOC);
     $week_sales = $result['total'];
-    
+
     $sql = "SELECT COALESCE(SUM(total_amount), 0) as total 
             FROM transactions 
             WHERE YEAR(transaction_date) = YEAR(NOW()) 
@@ -34,12 +35,13 @@ try {
     $query->execute();
     $result = $query->fetch(PDO::FETCH_ASSOC);
     $month_sales = $result['total'];
-} catch(PDOException $e) {
+} catch (PDOException $e) {
     // Handle error
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Reports Dashboard | POS System</title>
@@ -51,11 +53,9 @@ try {
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -71,7 +71,7 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Sales Overview -->
                 <div class="row">
                     <div class="col-lg-4">
@@ -102,7 +102,7 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Report Categories -->
                 <div class="row">
                     <div class="col-lg-4 col-md-6">
@@ -123,7 +123,7 @@ try {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4 col-md-6">
                         <div class="card">
                             <div class="card-body">
@@ -142,7 +142,7 @@ try {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4 col-md-6">
                         <div class="card">
                             <div class="card-body">
@@ -161,7 +161,7 @@ try {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4 col-md-6">
                         <div class="card">
                             <div class="card-body">
@@ -180,7 +180,7 @@ try {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4 col-md-6">
                         <div class="card">
                             <div class="card-body">
@@ -199,7 +199,7 @@ try {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4 col-md-6">
                         <div class="card">
                             <div class="card-body">
@@ -225,7 +225,7 @@ try {
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -233,4 +233,5 @@ try {
     <script src="template/assets/js/feather.min.js"></script>
     <script src="template/assets/js/app.js"></script>
 </body>
+
 </html>

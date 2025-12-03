@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Edit Category Page
  */
@@ -15,7 +16,7 @@ $error = '';
 $success = '';
 
 // Get category ID
-if(!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header("Location: manage_categories.php");
     exit();
 }
@@ -29,20 +30,20 @@ $query->bindParam(':id', $cat_id, PDO::PARAM_INT);
 $query->execute();
 $category = $query->fetch(PDO::FETCH_ASSOC);
 
-if(!$category) {
+if (!$category) {
     header("Location: manage_categories.php");
     exit();
 }
 
 // Handle update category
-if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_category'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_category'])) {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
     $parent_id = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
-    
-    if(empty($name)) {
+
+    if (empty($name)) {
         $error = 'Category name is required';
-    } elseif($parent_id == $cat_id) {
+    } elseif ($parent_id == $cat_id) {
         $error = 'Category cannot be its own parent';
     } else {
         try {
@@ -53,8 +54,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_category'])) {
             $query->bindParam(':parent_id', $parent_id, PDO::PARAM_INT);
             $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
             $query->bindParam(':id', $cat_id, PDO::PARAM_INT);
-            
-            if($query->execute()) {
+
+            if ($query->execute()) {
                 log_activity($dbh, 'UPDATE_CATEGORY', "Updated category: $name");
                 $success = 'Category updated successfully!';
                 // Refresh category data
@@ -62,7 +63,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_category'])) {
                 $category['description'] = $description;
                 $category['parent_id'] = $parent_id;
             }
-        } catch(PDOException $e) {
+        } catch (PDOException $e) {
             $error = 'Error updating category: ' . $e->getMessage();
         }
     }
@@ -77,6 +78,7 @@ $all_categories = $query->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Edit Category | POS System</title>
@@ -88,11 +90,9 @@ $all_categories = $query->fetchAll(PDO::FETCH_ASSOC);
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -110,21 +110,21 @@ $all_categories = $query->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                
-                <?php if($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <?php echo $error; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $error; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
-                <?php if($success): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <?php echo $success; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($success): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $success; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
+
                 <div class="row">
                     <div class="col-lg-6 offset-lg-3">
                         <div class="card">
@@ -137,18 +137,19 @@ $all_categories = $query->fetchAll(PDO::FETCH_ASSOC);
                                         <label for="name">Category Name <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="name" name="name" value="<?php echo htmlspecialchars($category['name']); ?>" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="description">Description</label>
                                         <textarea class="form-control" id="description" name="description" rows="3"><?php echo htmlspecialchars($category['description']); ?></textarea>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="parent_id">Parent Category (Optional)</label>
                                         <select class="form-control" id="parent_id" name="parent_id">
                                             <option value="">-- No Parent (Main Category) --</option>
-                                            <?php foreach($all_categories as $cat): ?>
-                                                <?php if(empty($cat['parent_id'])): // Only show main categories ?>
+                                            <?php foreach ($all_categories as $cat): ?>
+                                                <?php if (empty($cat['parent_id'])): // Only show main categories 
+                                                ?>
                                                     <option value="<?php echo $cat['id']; ?>" <?php echo ($category['parent_id'] == $cat['id']) ? 'selected' : ''; ?>>
                                                         <?php echo htmlspecialchars($cat['name']); ?>
                                                     </option>
@@ -157,7 +158,7 @@ $all_categories = $query->fetchAll(PDO::FETCH_ASSOC);
                                         </select>
                                         <small class="form-text text-muted">Leave blank to create a main category</small>
                                     </div>
-                                    
+
                                     <div class="form-group mb-0">
                                         <button type="submit" name="update_category" class="btn btn-primary">
                                             <i class="fas fa-save mr-1"></i> Update Category
@@ -177,7 +178,7 @@ $all_categories = $query->fetchAll(PDO::FETCH_ASSOC);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -185,4 +186,5 @@ $all_categories = $query->fetchAll(PDO::FETCH_ASSOC);
     <script src="template/assets/js/feather.min.js"></script>
     <script src="template/assets/js/app.js"></script>
 </body>
+
 </html>

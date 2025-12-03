@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Customer Details Page
  * View detailed customer information and purchase history
@@ -17,7 +18,7 @@ $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
 $query->execute();
 $customer = $query->fetch(PDO::FETCH_ASSOC);
 
-if(!$customer) {
+if (!$customer) {
     header("Location: customers.php");
     exit();
 }
@@ -31,6 +32,7 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Customer Details | POS System</title>
@@ -43,11 +45,9 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -73,7 +73,7 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-lg-4">
                         <div class="card">
@@ -108,7 +108,7 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="mb-3">
                                     <label class="font-weight-bold">Status:</label>
                                     <p>
-                                        <?php if($customer['is_active']): ?>
+                                        <?php if ($customer['is_active']): ?>
                                             <span class="badge badge-success">Active</span>
                                         <?php else: ?>
                                             <span class="badge badge-secondary">Inactive</span>
@@ -118,58 +118,58 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-8">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">Purchase History</h5>
                             </div>
                             <div class="card-body">
-                                <?php if(count($transactions) > 0): ?>
-                                <div class="table-responsive">
-                                    <table id="transactionsTable" class="table table-striped table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th>Transaction ID</th>
-                                                <th>Date</th>
-                                                <th>Total</th>
-                                                <th>Payment Method</th>
-                                                <th>Status</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach($transactions as $trans): ?>
-                                            <tr>
-                                                <td>#<?php echo $trans['id']; ?></td>
-                                                <td><?php echo date('d/m/Y H:i', strtotime($trans['transaction_date'])); ?></td>
-                                                <td><?php echo format_currency($dbh, $trans['total_amount']); ?></td>
-                                                <td><?php echo htmlspecialchars($trans['payment_method']); ?></td>
-                                                <td>
-                                                    <?php 
-                                                    $status_badges = [
-                                                        'completed' => '<span class="badge badge-success">Completed</span>',
-                                                        'void' => '<span class="badge badge-danger">Void</span>',
-                                                        'refunded' => '<span class="badge badge-warning">Refunded</span>',
-                                                        'held' => '<span class="badge badge-info">Held</span>'
-                                                    ];
-                                                    echo $status_badges[$trans['status']] ?? '<span class="badge badge-secondary">Unknown</span>';
-                                                    ?>
-                                                </td>
-                                                <td>
-                                                    <a href="receipt.php?id=<?php echo $trans['id']; ?>" class="btn btn-sm btn-info" target="_blank">
-                                                        <i class="fas fa-receipt"></i> Receipt
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <?php if (count($transactions) > 0): ?>
+                                    <div class="table-responsive">
+                                        <table id="transactionsTable" class="table table-striped table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Transaction ID</th>
+                                                    <th>Date</th>
+                                                    <th>Total</th>
+                                                    <th>Payment Method</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($transactions as $trans): ?>
+                                                    <tr>
+                                                        <td>#<?php echo $trans['id']; ?></td>
+                                                        <td><?php echo date('d/m/Y H:i', strtotime($trans['transaction_date'])); ?></td>
+                                                        <td><?php echo format_currency($dbh, $trans['total_amount']); ?></td>
+                                                        <td><?php echo htmlspecialchars($trans['payment_method']); ?></td>
+                                                        <td>
+                                                            <?php
+                                                            $status_badges = [
+                                                                'completed' => '<span class="badge badge-success">Completed</span>',
+                                                                'void' => '<span class="badge badge-danger">Void</span>',
+                                                                'refunded' => '<span class="badge badge-warning">Refunded</span>',
+                                                                'held' => '<span class="badge badge-info">Held</span>'
+                                                            ];
+                                                            echo $status_badges[$trans['status']] ?? '<span class="badge badge-secondary">Unknown</span>';
+                                                            ?>
+                                                        </td>
+                                                        <td>
+                                                            <a href="receipt.php?id=<?php echo $trans['id']; ?>" class="btn btn-sm btn-info" target="_blank">
+                                                                <i class="fas fa-receipt"></i> Receipt
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 <?php else: ?>
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle mr-2"></i> No purchase history found for this customer.
-                                </div>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle mr-2"></i> No purchase history found for this customer.
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -181,7 +181,7 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -189,14 +189,17 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#transactionsTable').DataTable({
-            pageLength: 10,
-            order: [[1, 'desc']]
+        $(document).ready(function() {
+            $('#transactionsTable').DataTable({
+                pageLength: 10,
+                order: [
+                    [1, 'desc']
+                ]
+            });
         });
-    });
     </script>
 </body>
+
 </html>

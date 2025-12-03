@@ -1,4 +1,5 @@
 <?php
+
 /**
  * All Users Page
  * View and manage system users (admins, managers, cashiers)
@@ -16,6 +17,7 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>All Users | POS System</title>
@@ -28,15 +30,9 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-<div class="left-sidenav">
-    <div class="brand">
-        <?php require('template/brand_admin.php'); ?>
-    </div>
-    <div class="menu-content h-100" data-simplebar>
-        <?php require('include/menus.php'); ?>
-    </div>
-</div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -61,7 +57,7 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -84,47 +80,48 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($users as $user): ?>
-                                            <tr>
-                                                <td><?php echo $user['id']; ?></td>
-                                                <td><?php echo htmlspecialchars($user['fname'] . ' ' . $user['sname']); ?></td>
-                                                <td><?php echo htmlspecialchars($user['username']); ?></td>
-                                                <td><?php echo htmlspecialchars($user['email'] ?? '-'); ?></td>
-                                                <td>
-                                                    <?php
-                                                    $role_badges = [
-                                                        'admin' => 'danger',
-                                                        'manager' => 'warning',
-                                                        'cashier' => 'info'
-                                                    ];
-                                                    $badge_color = $role_badges[$user['user_role']] ?? 'secondary';
-                                                    ?>
-                                                    <span class="badge badge-<?php echo $badge_color; ?>">
-                                                        <?php echo ucfirst($user['user_role']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <?php if($user['is_active']): ?>
-                                                        <span class="badge badge-success">Active</span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-secondary">Inactive</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><?php echo date('d/m/Y', strtotime($user['reg_date'])); ?></td>
-                                                <td>
-                                                    <a href="edit_admin.php?id=<?php echo $user['id']; ?>" 
-                                                       class="btn btn-sm btn-primary" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <?php if($user['username'] != 'admin'): // Prevent deleting super admin ?>
-                                                    <button class="btn btn-sm btn-danger" 
-                                                            onclick="confirmDelete(<?php echo $user['id']; ?>)" 
-                                                            title="Deactivate">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
+                                            <?php foreach ($users as $user): ?>
+                                                <tr>
+                                                    <td><?php echo $user['id']; ?></td>
+                                                    <td><?php echo htmlspecialchars($user['fname'] . ' ' . $user['sname']); ?></td>
+                                                    <td><?php echo htmlspecialchars($user['username']); ?></td>
+                                                    <td><?php echo htmlspecialchars($user['email'] ?? '-'); ?></td>
+                                                    <td>
+                                                        <?php
+                                                        $role_badges = [
+                                                            'admin' => 'danger',
+                                                            'manager' => 'warning',
+                                                            'cashier' => 'info'
+                                                        ];
+                                                        $badge_color = $role_badges[$user['user_role']] ?? 'secondary';
+                                                        ?>
+                                                        <span class="badge badge-<?php echo $badge_color; ?>">
+                                                            <?php echo ucfirst($user['user_role']); ?>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($user['is_active']): ?>
+                                                            <span class="badge badge-success">Active</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-secondary">Inactive</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td><?php echo date('d/m/Y', strtotime($user['reg_date'])); ?></td>
+                                                    <td>
+                                                        <a href="edit_admin.php?id=<?php echo $user['id']; ?>"
+                                                            class="btn btn-sm btn-primary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <?php if ($user['username'] != 'admin'): // Prevent deleting super admin 
+                                                        ?>
+                                                            <button class="btn btn-sm btn-danger"
+                                                                onclick="confirmDelete(<?php echo $user['id']; ?>)"
+                                                                title="Deactivate">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -139,7 +136,7 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -148,35 +145,38 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
     <script src="template/plugins/bootbox/bootbox.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#usersTable').DataTable({
-            order: [[1, 'asc']],
-            pageLength: 25
+        $(document).ready(function() {
+            $('#usersTable').DataTable({
+                order: [
+                    [1, 'asc']
+                ],
+                pageLength: 25
+            });
         });
-    });
-    
-    function confirmDelete(userId) {
-        bootbox.confirm({
-            message: "Are you sure you want to deactivate this user?",
-            buttons: {
-                confirm: {
-                    label: 'Yes, Deactivate',
-                    className: 'btn-danger'
+
+        function confirmDelete(userId) {
+            bootbox.confirm({
+                message: "Are you sure you want to deactivate this user?",
+                buttons: {
+                    confirm: {
+                        label: 'Yes, Deactivate',
+                        className: 'btn-danger'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-secondary'
+                    }
                 },
-                cancel: {
-                    label: 'Cancel',
-                    className: 'btn-secondary'
+                callback: function(result) {
+                    if (result) {
+                        window.location.href = 'delete_admin.php?id=' + userId;
+                    }
                 }
-            },
-            callback: function (result) {
-                if (result) {
-                    window.location.href = 'delete_admin.php?id=' + userId;
-                }
-            }
-        });
-    }
+            });
+        }
     </script>
 </body>
+
 </html>

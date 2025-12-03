@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Financial Report Page
  */
@@ -32,11 +33,11 @@ $total_revenue = 0;
 $total_cogs = 0; // Cost of Goods Sold
 $total_profit = 0;
 
-foreach($items as $item) {
+foreach ($items as $item) {
     $revenue = $item['line_total'];
     $cost = $item['quantity'] * $item['cost_price'];
     $profit = $revenue - $cost;
-    
+
     $total_revenue += $revenue;
     $total_cogs += $cost;
     $total_profit += $profit;
@@ -46,6 +47,7 @@ $margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Financial Report | POS System</title>
@@ -57,11 +59,9 @@ $margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -78,7 +78,7 @@ $margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -94,7 +94,7 @@ $margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
                                     </div>
                                     <button type="submit" class="btn btn-primary">Filter</button>
                                 </form>
-                                
+
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="card bg-primary text-white">
@@ -124,7 +124,7 @@ $margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="alert alert-info mt-4">
                                     <i class="fas fa-info-circle mr-1"></i> Note: This report calculates profit based on the difference between Selling Price and Cost Price for sold items.
                                 </div>
@@ -138,7 +138,7 @@ $margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -146,4 +146,5 @@ $margin = $total_revenue > 0 ? ($total_profit / $total_revenue) * 100 : 0;
     <script src="template/assets/js/feather.min.js"></script>
     <script src="template/assets/js/app.js"></script>
 </body>
+
 </html>

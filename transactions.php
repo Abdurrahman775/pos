@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Transactions List Page
  * View all transactions with filters and search
@@ -14,6 +15,7 @@ require_permission('transactions');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Transactions | POS System</title>
@@ -26,11 +28,9 @@ require_permission('transactions');
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -46,7 +46,7 @@ require_permission('transactions');
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -81,42 +81,42 @@ require_permission('transactions');
                                             $query = $dbh->prepare($sql);
                                             $query->execute();
                                             $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
-                                            
-                                            foreach($transactions as $trans):
+
+                                            foreach ($transactions as $trans):
                                             ?>
-                                            <tr>
-                                                <td>#<?php echo $trans['transaction_id']; ?></td>
-                                                <td><?php echo date('d/m/Y H:i', strtotime($trans['transaction_date'])); ?></td>
-                                                <td><?php echo $trans['customer_name'] ?? 'Walk-in'; ?></td>
-                                                <td><?php echo format_currency($dbh, $trans['subtotal']); ?></td>
-                                                <td><?php echo format_currency($dbh, $trans['tax_amount']); ?></td>
-                                                <td><?php echo format_currency($dbh, $trans['discount_amount']); ?></td>
-                                                <td><strong><?php echo format_currency($dbh, $trans['total_amount']); ?></strong></td>
-                                                <td><?php echo ucfirst($trans['payment_method']); ?></td>
-                                                <td>
-                                                    <?php
-                                                    $badge = [
-                                                        'completed' => 'success',
-                                                        'void' => 'danger',
-                                                        'refunded' => 'warning',
-                                                        'held' => 'info'
-                                                    ];
-                                                    $status_badge = $badge[$trans['status']] ?? 'secondary';
-                                                    ?>
-                                                    <span class="badge badge-<?php echo $status_badge; ?>"><?php echo ucfirst($trans['status']); ?></span>
-                                                </td>
-                                                <td><?php echo $trans['username']; ?></td>
-                                                <td>
-                                                    <a href="view_transaction.php?id=<?php echo $trans['transaction_id']; ?>" 
-                                                       class="btn btn-sm btn-primary" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <a href="#" onclick="printReceipt(<?php echo $trans['transaction_id']; ?>)" 
-                                                       class="btn btn-sm btn-info" title="Print Receipt">
-                                                        <i class="fas fa-print"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
+                                                <tr>
+                                                    <td>#<?php echo $trans['transaction_id']; ?></td>
+                                                    <td><?php echo date('d/m/Y H:i', strtotime($trans['transaction_date'])); ?></td>
+                                                    <td><?php echo $trans['customer_name'] ?? 'Walk-in'; ?></td>
+                                                    <td><?php echo format_currency($dbh, $trans['subtotal']); ?></td>
+                                                    <td><?php echo format_currency($dbh, $trans['tax_amount']); ?></td>
+                                                    <td><?php echo format_currency($dbh, $trans['discount_amount']); ?></td>
+                                                    <td><strong><?php echo format_currency($dbh, $trans['total_amount']); ?></strong></td>
+                                                    <td><?php echo ucfirst($trans['payment_method']); ?></td>
+                                                    <td>
+                                                        <?php
+                                                        $badge = [
+                                                            'completed' => 'success',
+                                                            'void' => 'danger',
+                                                            'refunded' => 'warning',
+                                                            'held' => 'info'
+                                                        ];
+                                                        $status_badge = $badge[$trans['status']] ?? 'secondary';
+                                                        ?>
+                                                        <span class="badge badge-<?php echo $status_badge; ?>"><?php echo ucfirst($trans['status']); ?></span>
+                                                    </td>
+                                                    <td><?php echo $trans['username']; ?></td>
+                                                    <td>
+                                                        <a href="view_transaction.php?id=<?php echo $trans['transaction_id']; ?>"
+                                                            class="btn btn-sm btn-primary" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="#" onclick="printReceipt(<?php echo $trans['transaction_id']; ?>)"
+                                                            class="btn btn-sm btn-info" title="Print Receipt">
+                                                            <i class="fas fa-print"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -131,7 +131,7 @@ require_permission('transactions');
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -140,18 +140,21 @@ require_permission('transactions');
     <script src="template/plugins/bootbox/bootbox.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#transactionsTable').DataTable({
-            order: [[1, 'desc']],
-            pageLength: 25
+        $(document).ready(function() {
+            $('#transactionsTable').DataTable({
+                order: [
+                    [1, 'desc']
+                ],
+                pageLength: 25
+            });
         });
-    });
-    
-    function printReceipt(transactionId) {
-        window.open('receipt.php?id=' + transactionId, '_blank', 'width=800,height=600');
-    }
+
+        function printReceipt(transactionId) {
+            window.open('receipt.php?id=' + transactionId, '_blank', 'width=800,height=600');
+        }
     </script>
 </body>
+
 </html>

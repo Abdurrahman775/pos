@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Employees Management Page
  * List all employees/users in the system
@@ -14,6 +15,7 @@ require_permission('employees');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Employees | POS System</title>
@@ -26,11 +28,9 @@ require_permission('employees');
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -55,7 +55,7 @@ require_permission('employees');
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -83,44 +83,44 @@ require_permission('employees');
                                             $query = $dbh->prepare($sql);
                                             $query->execute();
                                             $employees = $query->fetchAll(PDO::FETCH_ASSOC);
-                                            
-                                            foreach($employees as $emp):
+
+                                            foreach ($employees as $emp):
                                                 $full_name = trim($emp['fname'] . ' ' . ($emp['mname'] ?? '') . ' ' . $emp['sname']);
                                             ?>
-                                            <tr>
-                                                <td><?php echo $emp['id']; ?></td>
-                                                <td><?php echo htmlspecialchars($emp['username']); ?></td>
-                                                <td><?php echo htmlspecialchars($full_name); ?></td>
-                                                <td><?php echo htmlspecialchars($emp['email']); ?></td>
-                                                <td>
-                                                    <?php
-                                                    $role_badges = [
-                                                        1 => '<span class="badge badge-danger">Administrator</span>',
-                                                        2 => '<span class="badge badge-warning">Manager</span>',
-                                                        3 => '<span class="badge badge-info">Cashier</span>'
-                                                    ];
-                                                    echo $role_badges[$emp['role_id']] ?? '<span class="badge badge-secondary">Unknown</span>';
-                                                    ?>
-                                                </td>
-                                                <td>
-                                                    <?php if($emp['is_active']): ?>
-                                                        <span class="badge badge-success">Active</span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-secondary">Inactive</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><?php echo $emp['last_update'] ? date('d/m/Y H:i', strtotime($emp['last_update'])) : 'Never'; ?></td>
-                                                <td>
-                                                    <a href="edit_employee.php?id=<?php echo $emp['id']; ?>" 
-                                                       class="btn btn-sm btn-primary" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <a href="employee_details.php?id=<?php echo $emp['id']; ?>" 
-                                                       class="btn btn-sm btn-info" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo $emp['id']; ?></td>
+                                                    <td><?php echo htmlspecialchars($emp['username']); ?></td>
+                                                    <td><?php echo htmlspecialchars($full_name); ?></td>
+                                                    <td><?php echo htmlspecialchars($emp['email']); ?></td>
+                                                    <td>
+                                                        <?php
+                                                        $role_badges = [
+                                                            1 => '<span class="badge badge-danger">Administrator</span>',
+                                                            2 => '<span class="badge badge-warning">Manager</span>',
+                                                            3 => '<span class="badge badge-info">Cashier</span>'
+                                                        ];
+                                                        echo $role_badges[$emp['role_id']] ?? '<span class="badge badge-secondary">Unknown</span>';
+                                                        ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($emp['is_active']): ?>
+                                                            <span class="badge badge-success">Active</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-secondary">Inactive</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td><?php echo $emp['last_update'] ? date('d/m/Y H:i', strtotime($emp['last_update'])) : 'Never'; ?></td>
+                                                    <td>
+                                                        <a href="edit_employee.php?id=<?php echo $emp['id']; ?>"
+                                                            class="btn btn-sm btn-primary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="employee_details.php?id=<?php echo $emp['id']; ?>"
+                                                            class="btn btn-sm btn-info" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -135,7 +135,7 @@ require_permission('employees');
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -143,14 +143,17 @@ require_permission('employees');
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#employeesTable').DataTable({
-            pageLength: 25,
-            order: [[0, 'desc']]
+        $(document).ready(function() {
+            $('#employeesTable').DataTable({
+                pageLength: 25,
+                order: [
+                    [0, 'desc']
+                ]
+            });
         });
-    });
     </script>
 </body>
+
 </html>

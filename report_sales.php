@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Sales Report Page
  */
@@ -30,14 +31,15 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
 $total_sales = 0;
 $total_transactions = count($transactions);
 
-foreach($transactions as $t) {
-    if($t['status'] == 'completed') {
+foreach ($transactions as $t) {
+    if ($t['status'] == 'completed') {
         $total_sales += $t['total_amount'];
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Sales Report | POS System</title>
@@ -50,11 +52,9 @@ foreach($transactions as $t) {
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -71,7 +71,7 @@ foreach($transactions as $t) {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -87,7 +87,7 @@ foreach($transactions as $t) {
                                     </div>
                                     <button type="submit" class="btn btn-primary">Filter</button>
                                 </form>
-                                
+
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <div class="card bg-light">
@@ -106,7 +106,7 @@ foreach($transactions as $t) {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="table-responsive">
                                     <table id="salesTable" class="table table-striped table-bordered">
                                         <thead>
@@ -121,26 +121,26 @@ foreach($transactions as $t) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($transactions as $t): ?>
-                                            <tr>
-                                                <td><?php echo date('d M Y h:i A', strtotime($t['transaction_date'])); ?></td>
-                                                <td><?php echo $t['transaction_id']; ?></td>
-                                                <td><?php echo $t['fname'] . ' ' . $t['lname']; ?></td>
-                                                <td><?php echo ucfirst($t['payment_method']); ?></td>
-                                                <td>
-                                                    <?php if($t['status'] == 'completed'): ?>
-                                                        <span class="badge badge-success">Completed</span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-warning"><?php echo ucfirst($t['status']); ?></span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><?php echo format_currency($dbh, $t['total_amount']); ?></td>
-                                                <td>
-                                                    <a href="receipt.php?id=<?php echo $t['id']; ?>" target="_blank" class="btn btn-sm btn-info">
-                                                        <i class="fas fa-print"></i> Receipt
-                                                    </a>
-                                                </td>
-                                            </tr>
+                                            <?php foreach ($transactions as $t): ?>
+                                                <tr>
+                                                    <td><?php echo date('d M Y h:i A', strtotime($t['transaction_date'])); ?></td>
+                                                    <td><?php echo $t['transaction_id']; ?></td>
+                                                    <td><?php echo $t['fname'] . ' ' . $t['lname']; ?></td>
+                                                    <td><?php echo ucfirst($t['payment_method']); ?></td>
+                                                    <td>
+                                                        <?php if ($t['status'] == 'completed'): ?>
+                                                            <span class="badge badge-success">Completed</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-warning"><?php echo ucfirst($t['status']); ?></span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td><?php echo format_currency($dbh, $t['total_amount']); ?></td>
+                                                    <td>
+                                                        <a href="receipt.php?id=<?php echo $t['id']; ?>" target="_blank" class="btn btn-sm btn-info">
+                                                            <i class="fas fa-print"></i> Receipt
+                                                        </a>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -155,7 +155,7 @@ foreach($transactions as $t) {
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -164,11 +164,14 @@ foreach($transactions as $t) {
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
-    $(document).ready(function() {
-        $('#salesTable').DataTable({
-            order: [[0, 'desc']]
+        $(document).ready(function() {
+            $('#salesTable').DataTable({
+                order: [
+                    [0, 'desc']
+                ]
+            });
         });
-    });
     </script>
 </body>
+
 </html>

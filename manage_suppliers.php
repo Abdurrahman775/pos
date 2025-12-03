@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Supplier Management Page
  * Manage supplier database
@@ -16,14 +17,14 @@ $error = '';
 $success = '';
 
 // Handle add supplier
-if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
     $supplier_name = trim($_POST['supplier_name']);
     $contact_name = trim($_POST['contact_name']);
     $phone = trim($_POST['phone']);
     $email = trim($_POST['email']);
     $address = trim($_POST['address']);
-    
-    if(empty($supplier_name)) {
+
+    if (empty($supplier_name)) {
         $error = 'Supplier name is required';
     } else {
         try {
@@ -36,12 +37,12 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
             $query->bindParam(':email', $email, PDO::PARAM_STR);
             $query->bindParam(':address', $address, PDO::PARAM_STR);
             $query->bindParam(':reg_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
-            
-            if($query->execute()) {
+
+            if ($query->execute()) {
                 log_activity($dbh, 'ADD_SUPPLIER', "Added supplier: $supplier_name");
                 $success = 'Supplier added successfully!';
             }
-        } catch(PDOException $e) {
+        } catch (PDOException $e) {
             $error = 'Error adding supplier: ' . $e->getMessage();
         }
     }
@@ -55,6 +56,7 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Manage Suppliers | POS System</title>
@@ -67,11 +69,9 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -88,21 +88,21 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                
-                <?php if($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <?php echo $error; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $error; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
-                <?php if($success): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <?php echo $success; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($success): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $success; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
+
                 <div class="row">
                     <div class="col-lg-4">
                         <div class="card">
@@ -115,27 +115,27 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
                                         <label for="supplier_name">Supplier Name <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="supplier_name" name="supplier_name" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="contact_name">Contact Person</label>
                                         <input type="text" class="form-control" id="contact_name" name="contact_name">
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="phone">Phone Number</label>
                                         <input type="text" class="form-control" id="phone" name="phone">
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="email">Email Address</label>
                                         <input type="email" class="form-control" id="email" name="email">
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="address">Address</label>
                                         <textarea class="form-control" id="address" name="address" rows="3"></textarea>
                                     </div>
-                                    
+
                                     <button type="submit" name="add_supplier" class="btn btn-primary btn-block">
                                         <i class="fas fa-plus mr-1"></i> Add Supplier
                                     </button>
@@ -143,7 +143,7 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-8">
                         <div class="card">
                             <div class="card-header">
@@ -164,7 +164,7 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($suppliers as $supplier): 
+                                            <?php foreach ($suppliers as $supplier):
                                                 // Count products from this supplier
                                                 $sql = "SELECT COUNT(*) FROM products WHERE supplier_id = :sup_id AND is_active = 1";
                                                 $query = $dbh->prepare($sql);
@@ -172,24 +172,24 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
                                                 $query->execute();
                                                 $product_count = $query->fetchColumn();
                                             ?>
-                                            <tr>
-                                                <td><?php echo $supplier['id']; ?></td>
-                                                <td><?php echo htmlspecialchars($supplier['supplier_name']); ?></td>
-                                                <td><?php echo htmlspecialchars($supplier['contact_name'] ?? '-'); ?></td>
-                                                <td><?php echo htmlspecialchars($supplier['phone'] ?? '-'); ?></td>
-                                                <td><?php echo htmlspecialchars($supplier['email'] ?? '-'); ?></td>
-                                                <td><?php echo $product_count; ?></td>
-                                                <td>
-                                                    <a href="edit_supplier.php?id=<?php echo $supplier['id']; ?>" 
-                                                       class="btn btn-sm btn-primary" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <a href="supplier_details.php?id=<?php echo $supplier['id']; ?>" 
-                                                       class="btn btn-sm btn-info" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo $supplier['id']; ?></td>
+                                                    <td><?php echo htmlspecialchars($supplier['supplier_name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($supplier['contact_name'] ?? '-'); ?></td>
+                                                    <td><?php echo htmlspecialchars($supplier['phone'] ?? '-'); ?></td>
+                                                    <td><?php echo htmlspecialchars($supplier['email'] ?? '-'); ?></td>
+                                                    <td><?php echo $product_count; ?></td>
+                                                    <td>
+                                                        <a href="edit_supplier.php?id=<?php echo $supplier['id']; ?>"
+                                                            class="btn btn-sm btn-primary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="supplier_details.php?id=<?php echo $supplier['id']; ?>"
+                                                            class="btn btn-sm btn-info" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -204,7 +204,7 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -212,13 +212,14 @@ $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#suppliersTable').DataTable({
-            pageLength: 25
+        $(document).ready(function() {
+            $('#suppliersTable').DataTable({
+                pageLength: 25
+            });
         });
-    });
     </script>
 </body>
+
 </html>

@@ -302,14 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     // Displaying Notifications
     echo "{$success} {$error}";
     ?>
-    <div class="left-sidenav">
-        <div class="brand">
-            <?php require('template/brand_admin.php'); ?>
-        </div>
-        <div class="menu-content h-100" data-simplebar>
-            <?php require('include/menus.php'); ?>
-        </div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar">
             <?php require('template/top_nav_admin.php'); ?>

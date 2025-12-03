@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Employee Performance Report Page
  */
@@ -33,6 +34,7 @@ $employees = $query->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Employee Performance | POS System</title>
@@ -45,11 +47,9 @@ $employees = $query->fetchAll(PDO::FETCH_ASSOC);
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -66,7 +66,7 @@ $employees = $query->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -82,7 +82,7 @@ $employees = $query->fetchAll(PDO::FETCH_ASSOC);
                                     </div>
                                     <button type="submit" class="btn btn-primary">Filter</button>
                                 </form>
-                                
+
                                 <div class="table-responsive">
                                     <table id="performanceTable" class="table table-striped table-bordered">
                                         <thead>
@@ -95,16 +95,16 @@ $employees = $query->fetchAll(PDO::FETCH_ASSOC);
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($employees as $e): 
+                                            <?php foreach ($employees as $e):
                                                 $avg_sale = $e['total_transactions'] > 0 ? $e['total_sales'] / $e['total_transactions'] : 0;
                                             ?>
-                                            <tr>
-                                                <td><?php echo htmlspecialchars($e['fname'] . ' ' . $e['lname']); ?></td>
-                                                <td><?php echo htmlspecialchars($e['username']); ?></td>
-                                                <td><?php echo $e['total_transactions']; ?></td>
-                                                <td><?php echo format_currency($dbh, $e['total_sales']); ?></td>
-                                                <td><?php echo format_currency($dbh, $avg_sale); ?></td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo htmlspecialchars($e['fname'] . ' ' . $e['lname']); ?></td>
+                                                    <td><?php echo htmlspecialchars($e['username']); ?></td>
+                                                    <td><?php echo $e['total_transactions']; ?></td>
+                                                    <td><?php echo format_currency($dbh, $e['total_sales']); ?></td>
+                                                    <td><?php echo format_currency($dbh, $avg_sale); ?></td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -119,7 +119,7 @@ $employees = $query->fetchAll(PDO::FETCH_ASSOC);
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -128,11 +128,14 @@ $employees = $query->fetchAll(PDO::FETCH_ASSOC);
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
-    $(document).ready(function() {
-        $('#performanceTable').DataTable({
-            order: [[3, 'desc']] // Sort by Total Sales by default
+        $(document).ready(function() {
+            $('#performanceTable').DataTable({
+                order: [
+                    [3, 'desc']
+                ] // Sort by Total Sales by default
+            });
         });
-    });
     </script>
 </body>
+
 </html>

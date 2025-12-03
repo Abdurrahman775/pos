@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Edit Customer Page
  * Update customer information
@@ -19,20 +20,20 @@ $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
 $query->execute();
 $customer = $query->fetch(PDO::FETCH_ASSOC);
 
-if(!$customer) {
+if (!$customer) {
     header("Location: customers.php");
     exit();
 }
 
 // Handle form submission
-if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
     $name = trim($_POST['name']);
     $phone = trim($_POST['phone']);
     $email = trim($_POST['email']);
     $address = trim($_POST['address']);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
-    
-    if(empty($name) || empty($phone)) {
+
+    if (empty($name) || empty($phone)) {
         $error = 'Name and phone are required fields.';
     } else {
         try {
@@ -46,16 +47,15 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
             $query->bindParam(':is_active', $is_active, PDO::PARAM_INT);
             $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
             $query->execute();
-            
+
             $success = 'Customer updated successfully!';
-            
+
             // Refresh customer data
             $query = $dbh->prepare("SELECT * FROM customers WHERE id = :id");
             $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
             $query->execute();
             $customer = $query->fetch(PDO::FETCH_ASSOC);
-            
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             $error = 'Error updating customer: ' . $e->getMessage();
         }
     }
@@ -63,6 +63,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Edit Customer | POS System</title>
@@ -74,11 +75,9 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
-    <div class="left-sidenav">
-        <div class="brand"><?php require('template/brand_admin.php'); ?></div>
-        <div class="menu-content h-100" data-simplebar><?php require('include/menus.php'); ?></div>
-    </div>
+    <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar"><?php require('template/top_nav_admin.php'); ?></div>
         <div class="page-content">
@@ -95,21 +94,21 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
                         </div>
                     </div>
                 </div>
-                
-                <?php if($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <?php echo $error; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $error; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
-                <?php if($success): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <?php echo $success; ?>
-                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-                </div>
+
+                <?php if ($success): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $success; ?>
+                        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                    </div>
                 <?php endif; ?>
-                
+
                 <div class="row">
                     <div class="col-lg-8 mx-auto">
                         <div class="card">
@@ -122,46 +121,46 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="name">Customer Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="name" name="name" 
-                                                       value="<?php echo htmlspecialchars($customer['name']); ?>" required>
+                                                <input type="text" class="form-control" id="name" name="name"
+                                                    value="<?php echo htmlspecialchars($customer['name']); ?>" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="phone">Phone Number <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" id="phone" name="phone" 
-                                                       value="<?php echo htmlspecialchars($customer['phone']); ?>" required>
+                                                <input type="text" class="form-control" id="phone" name="phone"
+                                                    value="<?php echo htmlspecialchars($customer['phone']); ?>" required>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="email">Email Address</label>
-                                                <input type="email" class="form-control" id="email" name="email" 
-                                                       value="<?php echo htmlspecialchars($customer['email']); ?>">
+                                                <input type="email" class="form-control" id="email" name="email"
+                                                    value="<?php echo htmlspecialchars($customer['email']); ?>">
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="address">Address</label>
-                                                <input type="text" class="form-control" id="address" name="address" 
-                                                       value="<?php echo htmlspecialchars($customer['address']); ?>">
+                                                <input type="text" class="form-control" id="address" name="address"
+                                                    value="<?php echo htmlspecialchars($customer['address']); ?>">
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <div class="custom-control custom-checkbox">
-                                            <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" 
-                                                   <?php echo $customer['is_active'] ? 'checked' : ''; ?>>
+                                            <input type="checkbox" class="custom-control-input" id="is_active" name="is_active"
+                                                <?php echo $customer['is_active'] ? 'checked' : ''; ?>>
                                             <label class="custom-control-label" for="is_active">Active Customer</label>
                                         </div>
                                     </div>
-                                    
+
                                     <hr>
-                                    
+
                                     <div class="form-group mb-0">
                                         <button type="submit" name="update_customer" class="btn btn-primary">
                                             <i class="fas fa-save mr-1"></i> Update Customer
@@ -181,7 +180,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -189,4 +188,5 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
     <script src="template/assets/js/feather.min.js"></script>
     <script src="template/assets/js/app.js"></script>
 </body>
+
 </html>
