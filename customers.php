@@ -1,12 +1,12 @@
 <?php
+
 /**
  * Customers Management Page
  * List and manage customer database
  */
 require("config.php");
 require("include/functions.php");
-require("include/pos_functions.php");
-require("include/authentication.php");
+require("include/admin_authentication.php");
 require("include/admin_constants.php");
 
 // Require customers permission
@@ -14,6 +14,7 @@ require_permission('customers');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Customers | POS System</title>
@@ -26,6 +27,7 @@ require_permission('customers');
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
 </head>
+
 <body class="dark-sidenav">
     <div class="left-sidenav">
         <div class="brand"><?php require('template/brand_admin.php'); ?></div>
@@ -55,9 +57,17 @@ require_permission('customers');
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-12">
+                        <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle mr-2"></i> Customer added successfully!
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title">Customer Database</h5>
@@ -83,34 +93,34 @@ require_permission('customers');
                                             $query = $dbh->prepare($sql);
                                             $query->execute();
                                             $customers = $query->fetchAll(PDO::FETCH_ASSOC);
-                                            
-                                            foreach($customers as $customer):
+
+                                            foreach ($customers as $customer):
                                             ?>
-                                            <tr>
-                                                <td><?php echo $customer['customer_id']; ?></td>
-                                                <td><?php echo htmlspecialchars($customer['name']); ?></td>
-                                                <td><?php echo htmlspecialchars($customer['phone'] ?? '-'); ?></td>
-                                                <td><?php echo htmlspecialchars($customer['email'] ?? '-'); ?></td>
-                                                <td><?php echo format_currency($dbh, $customer['total_purchases']); ?></td>
-                                                <td><?php echo date('d/m/Y', strtotime($customer['created_at'])); ?></td>
-                                                <td>
-                                                    <?php if($customer['is_active']): ?>
-                                                        <span class="badge badge-success">Active</span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-secondary">Inactive</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <a href="customer_details.php?id=<?php echo $customer['customer_id']; ?>" 
-                                                       class="btn btn-sm btn-info" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <a href="edit_customer.php?id=<?php echo $customer['customer_id']; ?>" 
-                                                       class="btn btn-sm btn-primary" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
+                                                <tr>
+                                                    <td><?php echo $customer['id']; ?></td>
+                                                    <td><?php echo htmlspecialchars($customer['name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($customer['phone'] ?? '-'); ?></td>
+                                                    <td><?php echo htmlspecialchars($customer['email'] ?? '-'); ?></td>
+                                                    <td><?php echo format_currency($dbh, $customer['total_purchases']); ?></td>
+                                                    <td><?php echo date('d/m/Y', strtotime($customer['created_at'])); ?></td>
+                                                    <td>
+                                                        <?php if ($customer['is_active']): ?>
+                                                            <span class="badge badge-success">Active</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-secondary">Inactive</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <a href="customer_details.php?id=<?php echo $customer['id']; ?>"
+                                                            class="btn btn-sm btn-info" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="edit_customer.php?id=<?php echo $customer['id']; ?>"
+                                                            class="btn btn-sm btn-primary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -125,7 +135,7 @@ require_permission('customers');
             </footer>
         </div>
     </div>
-    
+
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
@@ -133,14 +143,17 @@ require_permission('customers');
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-    
+
     <script>
-    $(document).ready(function() {
-        $('#customersTable').DataTable({
-            order: [[5, 'desc']],
-            pageLength: 25
+        $(document).ready(function() {
+            $('#customersTable').DataTable({
+                order: [
+                    [5, 'desc']
+                ],
+                pageLength: 25
+            });
         });
-    });
     </script>
 </body>
+
 </html>

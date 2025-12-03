@@ -15,17 +15,16 @@ $totalFiltered = $totalData;  // when there is no search parameter then total nu
 
 $sql = "SELECT id, name, qty_in_stock, barcode, selling_price FROM products WHERE qty_in_stock != 0 and is_active= 1";
 
-if(!empty($requestData['search']['value'])) {
+if (!empty($requestData['search']['value'])) {
     // when there is a search parameter then we have to modify total number filtered rows as per search result.
-    $sql.= " AND (name LIKE '%".$requestData['search']['value']."%' ";
-    $sql.= " OR barcode LIKE '%".$requestData['search']['value']."%')";
-    $sql.= " LIMIT ".$requestData['start']." ,".$requestData['length'];
+    $sql .= " AND (name LIKE '%" . $requestData['search']['value'] . "%' ";
+    $sql .= " OR barcode LIKE '%" . $requestData['search']['value'] . "%')";
+    $sql .= " LIMIT " . $requestData['start'] . " ," . $requestData['length'];
     $query = $dbh->prepare($sql);
     $query->execute();
     $totalFiltered = $query->rowCount();
-
 } else {
-    $sql.= " LIMIT ".$requestData['start']." ,".$requestData['length'];
+    $sql .= " LIMIT " . $requestData['start'] . " ," . $requestData['length'];
     $query = $dbh->prepare($sql);
     $query->execute();
 }
@@ -34,22 +33,21 @@ $data = array();
 $i = 1 + $requestData['start'];
 
 // preparing an array
-while($result = $query->fetch(PDO::FETCH_ASSOC)) {
+while ($result = $query->fetch(PDO::FETCH_ASSOC)) {
     $nestedData = array();
-	$product_id = $result['id'];
+    $product_id = $result['id'];
     $nestedData[] = $result['name'];
-    $nestedData[] = get_currency($dbh) . number_format($result['selling_price'],2);
+    $nestedData[] = get_currency($dbh) . number_format($result['selling_price'], 2);
     $nestedData[] = $result['qty_in_stock'];
-	$nestedData[] = "<button name=\"cartPlus\" class=\"btn btn-outline-primary btn-round waves-effect waves-light btn-sm\" id=\"cartPlus\" title=\"Add {$result['product_name']} to cart\" onclick=\"addtocart(".$result['id'].")\">+ Cart</button>";
+    $nestedData[] = "<button name=\"cartPlus\" class=\"btn btn-outline-primary btn-round waves-effect waves-light btn-sm\" id=\"cartPlus\" title=\"Add {$result['name']} to cart\" onclick=\"addtocart(" . $result['id'] . ")\">+ Cart</button>";
     $data[] = $nestedData;
     $i++;
 }
 
 $json_data = array(
-"draw" => intval($requestData['draw']),
-"recordsTotal" => intval($totalData),
-"recordsFiltered" => intval($totalFiltered),
-"data" => $data
+    "draw" => intval($requestData['draw']),
+    "recordsTotal" => intval($totalData),
+    "recordsFiltered" => intval($totalFiltered),
+    "data" => $data
 );
 echo json_encode($json_data);
-?>

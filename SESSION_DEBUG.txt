@@ -1,0 +1,105 @@
+# Session Management Debug Guide
+
+## Quick Check
+```bash
+# Check if login page loads
+curl -s http://localhost/pos/index.php | grep -i "error" | head -5
+
+# Check HTTP status
+curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost/pos/index.php
+
+# Check for PHP errors
+tail -20 /var/log/apache2/error.log | grep -i "fatal\|error"
+```
+
+## Session Functions Available
+All located in: `/var/www/html/pos/include/session_manager.php`
+
+1. **initialize_session()** - Safe session start
+2. **destroy_session()** - Complete destruction with cookie clearing
+3. **regenerate_session()** - Security enhancement
+4. **clear_session_var($key)** - Clear specific variable
+5. **clear_login_session()** - Clear all login variables
+6. **is_user_logged_in()** - Check login status
+7. **is_activation_pending()** - Check activation status
+8. **get_current_user()** - Get current username
+9. **get_session_duration()** - Get timeout
+
+## Usage Example
+```php
+<?php
+require('include/session_manager.php');
+
+// Safe initialization
+initialize_session();
+
+// Check login
+if (is_user_logged_in()) {
+    echo "User: " . get_current_user();
+}
+
+// On logout
+destroy_session();
+?>
+```
+
+## Session Variables
+- `$_SESSION['pos_admin']` - Current logged-in username
+- `$_SESSION['pos_admin_temp']` - User in activation process
+- `$_SESSION['pos_admin_basic']` - User basic info cache
+- `$_SESSION['cart']` - Shopping cart data
+
+## Common Issues & Solutions
+
+### Issue: "Another session is active"
+**Status**: ✅ FIXED
+**Fix Location**: `/var/www/html/pos/include/login.php` (lines 24-31)
+**How it works**: Now clears old session if different user
+
+### Issue: Cannot redeclare function
+**Status**: ✅ FIXED
+**Fix Location**: `/var/www/html/pos/include/session_manager.php`
+**How it works**: Uses `function_exists()` checks
+
+### Issue: Session already started warning
+**Status**: ✅ FIXED
+**Fix Locations**: Multiple files
+**How it works**: All use `session_status() === PHP_SESSION_NONE`
+
+### Issue: Undefined variable errors
+**Status**: ✅ FIXED
+**Fix Location**: `/var/www/html/pos/index.php` (line 6-7)
+**How it works**: Initialize all variables at top
+
+## Testing Checklist
+- [ ] Login page loads (HTTP 200)
+- [ ] Can login with valid credentials
+- [ ] Can switch users without logout
+- [ ] Logout clears session completely
+- [ ] No "Another session is active" errors
+- [ ] No 500 Internal Server Errors
+- [ ] No fatal PHP errors in logs
+
+## Log Locations
+- Apache Errors: `/var/log/apache2/error.log`
+- PHP Errors: `/var/log/php-fpm/error.log` or above
+- Access Log: `/var/log/apache2/access.log`
+
+## Verification Commands
+```bash
+# Test login page
+php -l /var/www/html/pos/index.php
+
+# Test login function
+php -l /var/www/html/pos/include/login.php
+
+# Test session manager
+php -l /var/www/html/pos/include/session_manager.php
+
+# Check for function redeclaration issues
+grep -r "function get_current_user" /var/www/html/pos/include/
+
+# Test HTTP status
+curl -s -o /dev/null -w "%{http_code}" http://localhost/pos/index.php
+```
+

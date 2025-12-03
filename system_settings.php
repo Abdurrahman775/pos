@@ -5,7 +5,7 @@
  */
 require("config.php");
 require("include/functions.php");
-require("include/pos_functions.php");
+require_once("include/pos_functions.php");
 require("include/authentication.php");
 require("include/admin_constants.php");
 
