@@ -272,38 +272,58 @@ $msg = "";
                                 dataType: "json",
                                 success: function(response) {
                                     if (response.status == "success") {
-                                        bootbox.alert({
-                                            centerVertical: true,
-                                            size: "small",
-                                            message: "<i class='fa fa-check'></i> " + response.message,
-                                            callback: function() {
-                                                bootbox.confirm("Print Receipt?", function(printConfirm) {
-                                                    if (printConfirm) {
-                                                        // Send receipt to Xprinter via auto-print endpoint
-                                                        $.ajax({
-                                                            url: "ajax/print_receipt.php?token=" + response.token,
-                                                            method: "GET",
-                                                            dataType: "json",
-                                                            success: function(printResp) {
-                                                                bootbox.alert({
-                                                                    centerVertical: true,
-                                                                    size: "small",
-                                                                    message: "<i class='fa fa-print'></i> " + (printResp.message || "Receipt printed to Xprinter"),
-                                                                    callback: function() {
-                                                                        resetSalesWindow();
-                                                                    }
-                                                                });
+                                        // First show receipt preview
+                                        $.ajax({
+                                            url: "ajax/receipt_preview.php?token=" + response.token,
+                                            method: "GET",
+                                            dataType: "json",
+                                            success: function(previewResp) {
+                                                if (previewResp.status == "success") {
+                                                    bootbox.dialog({
+                                                        title: "Receipt Preview #" + String(previewResp.transaction_id).padStart(6, '0'),
+                                                        centerVertical: true,
+                                                        size: "large",
+                                                        message: '<div style="max-height: 500px; overflow-y: auto; background: white; padding: 20px;">' + previewResp.html + '</div>',
+                                                        buttons: {
+                                                            cancel: {
+                                                                label: 'Discard',
+                                                                className: 'btn-secondary btn-sm'
                                                             },
-                                                            error: function() {
-                                                                // Fallback: open PDF in browser if server printing fails
-                                                                window.open("include/pdf_invoice.php?token=" + response.token, "_blank");
-                                                                resetSalesWindow();
+                                                            print: {
+                                                                label: '<i class="fa fa-print"></i> Print & Close',
+                                                                className: 'btn-primary btn-sm',
+                                                                callback: function() {
+                                                                    // Send receipt to Xprinter via auto-print endpoint
+                                                                    $.ajax({
+                                                                        url: "ajax/print_receipt.php?token=" + response.token,
+                                                                        method: "GET",
+                                                                        dataType: "json",
+                                                                        success: function(printResp) {
+                                                                            bootbox.alert({
+                                                                                centerVertical: true,
+                                                                                size: "small",
+                                                                                message: "<i class='fa fa-print'></i> " + (printResp.message || "Receipt printed to Xprinter"),
+                                                                                callback: function() {
+                                                                                    resetSalesWindow();
+                                                                                }
+                                                                            });
+                                                                        },
+                                                                        error: function() {
+                                                                            // Fallback: open PDF in browser if server printing fails
+                                                                            window.open("include/pdf_invoice.php?token=" + response.token, "_blank");
+                                                                            resetSalesWindow();
+                                                                        }
+                                                                    });
+                                                                }
                                                             }
-                                                        });
-                                                    } else {
-                                                        resetSalesWindow();
-                                                    }
-                                                });
+                                                        }
+                                                    });
+                                                } else {
+                                                    bootbox.alert("Error generating receipt preview");
+                                                }
+                                            },
+                                            error: function() {
+                                                bootbox.alert("Error generating receipt preview");
                                             }
                                         });
                                     } else {
