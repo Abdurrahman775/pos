@@ -57,13 +57,13 @@ $query->bindParam(':transaction_id', $transaction_id, PDO::PARAM_INT);
 $query->execute();
 $items = $query->fetchAll(PDO::FETCH_ASSOC);
 
-// Get store settings
-$store_name = get_setting($dbh, 'store_name', 'S & I IT PARTNERS LTD');
-$store_address = get_setting($dbh, 'store_address', '');
-$store_phone = get_setting($dbh, 'store_phone', '');
-$store_email = get_setting($dbh, 'store_email', '');
-$receipt_footer = get_setting($dbh, 'receipt_footer', 'Thank you for your business!');
-$currency_symbol = get_setting($dbh, 'currency_symbol', '₦');
+// Get store settings (with defaults)
+$store_name = 'S & I IT PARTNERS LTD';
+$store_address = '';
+$store_phone = '';
+$store_email = '';
+$receipt_footer = 'Thank you for your business!';
+$currency_symbol = get_currency($dbh);
 
 // Build receipt HTML
 $html = '<div style="font-family: monospace; font-size: 12px; line-height: 1.4; width: 80mm; margin: 0 auto;">';
