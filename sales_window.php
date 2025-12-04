@@ -319,11 +319,12 @@ $msg = "";
                                                         }
                                                     });
                                                 } else {
-                                                    bootbox.alert("Error generating receipt preview");
+                                                    bootbox.alert("Error generating receipt preview: " + (previewResp.message || 'Unknown error'));
                                                 }
                                             },
-                                            error: function() {
-                                                bootbox.alert("Error generating receipt preview");
+                                            error: function(xhr, status, error) {
+                                                bootbox.alert("Error generating receipt preview: " + error);
+                                                console.log("Receipt preview error:", xhr, status, error);
                                             }
                                         });
                                     } else {

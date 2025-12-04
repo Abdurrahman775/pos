@@ -16,14 +16,18 @@ if (session_status() === PHP_SESSION_NONE) {
 $token = isset($_GET['token']) ? $_GET['token'] : '';
 
 if (empty($token)) {
-    die(json_encode(['status' => 'error', 'message' => 'No token provided']));
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'No token provided']);
+    exit;
 }
 
 // Decode token to get transaction_id
 $transaction_id = intval(base64_decode($token));
 
 if ($transaction_id <= 0) {
-    die(json_encode(['status' => 'error', 'message' => 'Invalid token']));
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Invalid token']);
+    exit;
 }
 
 // Get transaction details
@@ -39,7 +43,9 @@ $query->execute();
 $transaction = $query->fetch(PDO::FETCH_ASSOC);
 
 if (!$transaction) {
-    die(json_encode(['status' => 'error', 'message' => 'Transaction not found']));
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Transaction not found']);
+    exit;
 }
 
 // Get transaction items
