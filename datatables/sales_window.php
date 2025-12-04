@@ -36,6 +36,7 @@ $i = 1 + $requestData['start'];
 while ($result = $query->fetch(PDO::FETCH_ASSOC)) {
     $nestedData = array();
     $product_id = $result['id'];
+    $nestedData[] = $i;
     $nestedData[] = $result['name'];
     $nestedData[] = get_currency($dbh) . number_format($result['selling_price'], 2);
     $nestedData[] = $result['qty_in_stock'];

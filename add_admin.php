@@ -15,12 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     $fname = strtoupper(trim($_POST['fname']));
     $mname = !empty(trim($_POST['mname'])) ? strtoupper(trim($_POST['mname'])) : NULL;
     $email = strtolower(trim($_POST['email']));
+    $role_id = intval($_POST['role_id']);
 
     try {
         $auto_password = randomPassword();
         $hashedPassword = generateHash($auto_password);
 
-        $sql = "INSERT INTO admins (username, password, sname, fname, mname, email, reg_by, reg_date) VALUES (:username, :password, :sname, :fname, :mname, :email, :reg_by, :reg_date)";
+        $sql = "INSERT INTO admins (username, password, sname, fname, mname, email, role_id, reg_by, reg_date) VALUES (:username, :password, :sname, :fname, :mname, :email, :role_id, :reg_by, :reg_date)";
         $query = $dbh->prepare($sql);
         $query->bindParam(':username', $username, PDO::PARAM_STR);
         $query->bindParam(':password', $hashedPassword, PDO::PARAM_STR);
@@ -28,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         $query->bindParam(':fname', $fname, PDO::PARAM_STR);
         $query->bindParam(':mname', $mname, PDO::PARAM_STR);
         $query->bindParam(':email', $email, PDO::PARAM_STR);
+        $query->bindParam(':role_id', $role_id, PDO::PARAM_INT);
         $query->bindParam(':reg_by', $admin, PDO::PARAM_STR);
         $query->bindParam(':reg_date', $now, PDO::PARAM_STR);
         $query->execute();
@@ -98,6 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     email: {
                         required: true,
                         email: true
+                    },
+                    role_id: {
+                        required: true
                     }
                 },
                 messages: {
@@ -113,6 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     },
                     email: {
                         required: "Enter Email"
+                    },
+                    role_id: {
+                        required: "Select Role"
                     }
                 },
                 errorElement: 'span',
@@ -225,6 +233,17 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                                                 <label>Email</label>
                                                 <div class="input-group mb-3">
                                                     <input type="text" class="form-control form-control-sm" name="email" id="email" placeholder="Enter Email">
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Role <span class="text-danger">*</span></label>
+                                                <div class="input-group mb-3">
+                                                    <select class="form-control form-control-sm" name="role_id" id="role_id" required>
+                                                        <option value="">Select Role</option>
+                                                        <option value="1">Administrator</option>
+                                                        <option value="2">Manager</option>
+                                                        <option value="3">Cashier</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div class="form-group">

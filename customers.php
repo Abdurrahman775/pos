@@ -65,6 +65,14 @@ require_permission('customers');
                                 </button>
                             </div>
                         <?php endif; ?>
+                        <?php if (isset($_GET['success']) && $_GET['success'] == 'deleted'): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle mr-2"></i> Customer deleted successfully!
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title">Customer Database</h5>
@@ -94,7 +102,7 @@ require_permission('customers');
                                             foreach ($customers as $customer):
                                             ?>
                                                 <tr>
-                                                    <td><?php echo $customer['id']; ?></td>
+                                                    <td><?php echo $customer['customer_id']; ?></td>
                                                     <td><?php echo htmlspecialchars($customer['name']); ?></td>
                                                     <td><?php echo htmlspecialchars($customer['phone'] ?? '-'); ?></td>
                                                     <td><?php echo htmlspecialchars($customer['email'] ?? '-'); ?></td>
@@ -108,14 +116,19 @@ require_permission('customers');
                                                         <?php endif; ?>
                                                     </td>
                                                     <td>
-                                                        <a href="customer_details.php?id=<?php echo $customer['id']; ?>"
+                                                        <a href="customer_details.php?id=<?php echo $customer['customer_id']; ?>"
                                                             class="btn btn-sm btn-info" title="View Details">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
-                                                        <a href="edit_customer.php?id=<?php echo $customer['id']; ?>"
+                                                        <a href="edit_customer.php?id=<?php echo $customer['customer_id']; ?>"
                                                             class="btn btn-sm btn-primary" title="Edit">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
+                                                        <button type="button" class="btn btn-sm btn-danger delete-customer" 
+                                                                data-id="<?php echo $customer['customer_id']; ?>" 
+                                                                title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -143,11 +156,38 @@ require_permission('customers');
 
     <script>
         $(document).ready(function() {
-            $('#customersTable').DataTable({
+            var table = $('#customersTable').DataTable({
                 order: [
                     [5, 'desc']
                 ],
                 pageLength: 25
+            });
+
+            // Handle Delete Customer
+            $('#customersTable').on('click', '.delete-customer', function() {
+                var id = $(this).data('id');
+                var row = $(this).closest('tr');
+
+                if (confirm('Are you sure you want to delete this customer?')) {
+                    $.ajax({
+                        url: 'ajax/delete_customer.php',
+                        type: 'POST',
+                        data: { id: id },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                // Remove row from DataTable
+                                table.row(row).remove().draw(false);
+                                alert('Customer deleted successfully!');
+                            } else {
+                                alert('Error: ' + response.message);
+                            }
+                        },
+                        error: function() {
+                            alert('An error occurred while processing the request.');
+                        }
+                    });
+                }
             });
         });
     </script>

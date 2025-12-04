@@ -22,17 +22,26 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     if (empty($product_name)) {
         echo "<script>$('#product_name').addClass('is-invalid');</script>";
         echo "<script>$('#product_name_error').html('{$errorMessages['product_name']}');</script>";
-        //        $errorMessages[] = "Product Name is required.";
     } elseif (!preg_match('/^[A-Za-z0-9 ]+$/', $product_name)) {
         $errorMessages[] = "Invalid Product Name. Only letters and numbers are allowed.";
     } elseif (val_product_name($dbh, $product_name) != 0) {
         $errorMessages[] = "Product Exists";
-        //  $product_name_err = "<script>$('#product_name').html('{$errorMessages['product_name']}');</script>";   
-        $product_name_err = "Product Exists";
     }
+
     // Validate Description
     if (empty($description)) {
         $errorMessages[] = "Description is required.";
+    }
+
+    // Validate Barcode
+    if (!empty($barcode)) {
+        $barcodeSQL = "SELECT id FROM products WHERE barcode = :barcode";
+        $barcodeQuery = $dbh->prepare($barcodeSQL);
+        $barcodeQuery->bindParam(':barcode', $barcode, PDO::PARAM_STR);
+        $barcodeQuery->execute();
+        if ($barcodeQuery->rowCount() > 0) {
+            $errorMessages[] = "Barcode already exists. Please use a unique barcode.";
+        }
     }
 
     // Validate Cost Price
@@ -56,10 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     }
 
     if (empty($errorMessages)) {
-
         try {
-
-            $sql = "INSERT INTO products (name, description, barcode, cost_price, selling_price, qty_in_stock, low_stock_alert, reg_by, reg_date) VALUES (:product_name, :description, :barcode, :cost_price, :selling_price, :qty_in_stock, :low_stock_alert, :reg_by, :reg_date)";
+            $sql = "INSERT INTO products (name, description, barcode, cost_price, selling_price, qty_in_stock, low_stock_alert, reg_by, reg_date, category_id, supplier_id, hasBatches, is_active) VALUES (:product_name, :description, :barcode, :cost_price, :selling_price, :qty_in_stock, :low_stock_alert, :reg_by, :reg_date, 1, 1, 0, 1)";
             $query = $dbh->prepare($sql);
             $query->bindParam(':product_name', $product_name, PDO::PARAM_STR);
             $query->bindParam(':description', $description, PDO::PARAM_STR);
@@ -72,15 +79,23 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $query->bindParam(':reg_date', $now, PDO::PARAM_STR);
             $query->execute();
 
-            if ($query == TRUE) {
+            if ($query) {
                 $barcode = !empty($barcode) ? $barcode : null;
                 $success = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'Record saved', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-success btn-sm' } } }); });</script>";
             } else {
                 $error = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'ERROR! Try again', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-danger btn-sm' } } }); });</script>";
             }
         } catch (PDOException $e) {
-            $error = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'System Error!', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-danger btn-sm' } } }); });</script>";
+            $error = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'System Error! " . addslashes($e->getMessage()) . "', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-danger btn-sm' } } }); });</script>";
         }
+    } else {
+        // Display validation errors
+        $errorList = "<ul>";
+        foreach ($errorMessages as $msg) {
+            $errorList .= "<li>" . $msg . "</li>";
+        }
+        $errorList .= "</ul>";
+        $error = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', title: 'Validation Error', message: '{$errorList}', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-danger btn-sm' } } }); });</script>";
     }
 }
 ?>

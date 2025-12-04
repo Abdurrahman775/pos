@@ -66,3 +66,5 @@ if(!((isset($_SESSION['pos_admin'])) && (isAuthorized("",$MM_authorizedUsers, $_
 	exit;
 }
 */
+
+?>

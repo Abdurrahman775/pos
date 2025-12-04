@@ -1,15 +1,9 @@
 <?php
-
-/**
- * Sales Report Page
- */
 require("config.php");
 require("include/functions.php");
 require_once("include/pos_functions.php");
 require("include/authentication.php");
 require("include/admin_constants.php");
-
-// Require reports permission
 require_permission('reports');
 
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
@@ -51,6 +45,7 @@ foreach ($transactions as $t) {
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="dark-sidenav">
@@ -102,6 +97,25 @@ foreach ($transactions as $t) {
                                             <div class="card-body">
                                                 <h5 class="card-title">Total Transactions</h5>
                                                 <h3 class="text-info"><?php echo $total_transactions; ?></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-4">
+                                    <div class="col-md-8">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="header-title mt-0 mb-3">Daily Sales Trend</h5>
+                                                <canvas id="salesTrendChart" height="150"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="header-title mt-0 mb-3">Payment Methods</h5>
+                                                <canvas id="paymentChart" height="200"></canvas>
                                             </div>
                                         </div>
                                     </div>
@@ -169,6 +183,52 @@ foreach ($transactions as $t) {
                 order: [
                     [0, 'desc']
                 ]
+            });
+
+            var start_date = '<?php echo $start_date; ?>';
+            var end_date = '<?php echo $end_date; ?>';
+
+            // Load Charts
+            $.ajax({
+                url: 'ajax/get_report_data.php',
+                data: { action: 'sales_trend', start_date: start_date, end_date: end_date },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status == 'success') {
+                        new Chart(document.getElementById('salesTrendChart'), {
+                            type: 'line',
+                            data: {
+                                labels: response.data.labels,
+                                datasets: [{
+                                    label: 'Sales',
+                                    data: response.data.values,
+                                    borderColor: '#44a2d2',
+                                    fill: false
+                                }]
+                            }
+                        });
+                    }
+                }
+            });
+
+            $.ajax({
+                url: 'ajax/get_report_data.php',
+                data: { action: 'sales_breakdown', start_date: start_date, end_date: end_date },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status == 'success') {
+                        new Chart(document.getElementById('paymentChart'), {
+                            type: 'doughnut',
+                            data: {
+                                labels: response.data.payment_labels,
+                                datasets: [{
+                                    data: response.data.payment_values,
+                                    backgroundColor: ['#44a2d2', '#f5325c', '#03d87f']
+                                }]
+                            }
+                        });
+                    }
+                }
             });
         });
     </script>

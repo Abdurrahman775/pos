@@ -51,33 +51,61 @@ $currency_symbol = get_setting($dbh, 'currency_symbol', '₦');
     <link href="template/assets/css/bootstrap.min.css" rel="stylesheet">
     <style>
         @media print {
-            .no-print { display: none; }
-            body { margin: 0; padding: 10px; }
+            @page {
+                margin: 0;
+                size: 80mm 100mm; /* Fixed size: 80mm width, 100mm height */
+            }
+            html, body {
+                height: 100mm; /* Force height */
+                margin: 0;
+                padding: 0;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                overflow: hidden; /* Ensure it doesn't spill over */
+            }
+            .no-print {
+                display: none;
+            }
+            .receipt {
+                width: 100%;
+                border: none;
+                padding: 0;
+                margin: 0;
+                background-color: #ffffff !important; /* Force White */
+            }
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            background: #f5f5f5;
+            color: #000;
         }
         .receipt {
-            max-width: 400px;
-            margin: 20px auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            font-family: 'Courier New', monospace;
+            width: 72mm; /* Fits within 80mm paper */
+            margin: 0 auto; /* Center on screen */
+            padding: 2mm;
+            background: #fff;
+            box-sizing: border-box;
         }
+        /* ... rest of styles ... */
         .receipt-header {
             text-align: center;
             border-bottom: 2px dashed #000;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
         }
         .receipt-header h3 {
-            margin: 5px 0;
-            font-size: 18px;
+            margin: 0;
+            font-size: 16px;
             font-weight: bold;
+            text-transform: uppercase;
         }
         .receipt-header p {
-            margin: 3px 0;
+            margin: 2px 0;
             font-size: 12px;
         }
         .receipt-info {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-size: 12px;
         }
         .receipt-info div {
@@ -87,33 +115,36 @@ $currency_symbol = get_setting($dbh, 'currency_symbol', '₦');
         }
         .items-table {
             width: 100%;
-            margin-bottom: 15px;
+            border-collapse: collapse;
+            margin-bottom: 10px;
             font-size: 12px;
         }
         .items-table th {
             border-bottom: 1px solid #000;
-            padding: 5px 0;
+            padding: 3px 0;
             text-align: left;
+            font-weight: bold;
         }
         .items-table td {
-            padding: 5px 0;
+            padding: 3px 0;
+            vertical-align: top;
         }
         .items-table .text-right {
             text-align: right;
         }
         .totals {
             border-top: 1px solid #000;
-            padding-top: 10px;
-            margin-top: 10px;
+            padding-top: 5px;
+            margin-top: 5px;
         }
         .totals div {
             display: flex;
             justify-content: space-between;
-            margin: 5px 0;
+            margin: 3px 0;
             font-size: 13px;
         }
         .totals .grand-total {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             border-top: 2px solid #000;
             padding-top: 5px;
@@ -121,11 +152,12 @@ $currency_symbol = get_setting($dbh, 'currency_symbol', '₦');
         }
         .receipt-footer {
             text-align: center;
-            border-top: 2px dashed #000;
+            border-top: 1px dashed #000;
             padding-top: 10px;
             margin-top: 15px;
-            font-size: 12px;
+            font-size: 11px;
         }
+        .text-center { text-align: center; }
     </style>
 </head>
 <body>

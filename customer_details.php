@@ -12,7 +12,7 @@ require("include/admin_constants.php");
 $customer_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Get customer details
-$sql = "SELECT * FROM customers WHERE id = :id";
+$sql = "SELECT * FROM customers WHERE customer_id = :id";
 $query = $dbh->prepare($sql);
 $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
 $query->execute();
@@ -157,7 +157,7 @@ $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
                                                             ?>
                                                         </td>
                                                         <td>
-                                                            <a href="receipt.php?id=<?php echo $trans['id']; ?>" class="btn btn-sm btn-info" target="_blank">
+                                                            <a href="receipt.php?id=<?php echo $trans['id']; ?>" class="btn btn-sm btn-info" target="_blank" onclick="window.open(this.href, 'targetWindow', 'width=400,height=600'); return false;">
                                                                 <i class="fas fa-receipt"></i> Receipt
                                                             </a>
                                                         </td>

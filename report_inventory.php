@@ -1,15 +1,9 @@
 <?php
-
-/**
- * Inventory Report Page
- */
 require("config.php");
 require("include/functions.php");
 require_once("include/pos_functions.php");
 require("include/authentication.php");
 require("include/admin_constants.php");
-
-// Require reports permission
 require_permission('reports');
 
 // Get inventory data
@@ -29,7 +23,7 @@ $total_sales_value = 0;
 $low_stock_count = 0;
 
 foreach ($products as $p) {
-    $qty = $p['qty_in_stock']; // Using qty_in_stock as per add_product.php
+    $qty = $p['qty_in_stock'];
     $total_items += $qty;
     $total_cost_value += ($qty * $p['cost_price']);
     $total_sales_value += ($qty * $p['selling_price']);
@@ -38,8 +32,6 @@ foreach ($products as $p) {
         $low_stock_count++;
     }
 }
-
-$potential_profit = $total_sales_value - $total_cost_value;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,6 +47,7 @@ $potential_profit = $total_sales_value - $total_cost_value;
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
     <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="dark-sidenav">
@@ -106,6 +99,25 @@ $potential_profit = $total_sales_value - $total_cost_value;
                             <div class="card-body">
                                 <h5 class="card-title">Low Stock Items</h5>
                                 <h3 class="text-danger"><?php echo $low_stock_count; ?></h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="header-title mt-0 mb-3">Stock Value by Category</h5>
+                                <canvas id="categoryChart" height="150"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="header-title mt-0 mb-3">Stock Status</h5>
+                                <canvas id="statusChart" height="200"></canvas>
                             </div>
                         </div>
                     </div>
@@ -176,6 +188,43 @@ $potential_profit = $total_sales_value - $total_cost_value;
     <script>
         $(document).ready(function() {
             $('#inventoryTable').DataTable();
+
+            // Load Charts
+            $.ajax({
+                url: 'ajax/get_report_data.php',
+                data: { action: 'inventory_summary' },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status == 'success') {
+                        var data = response.data;
+
+                        // Category Chart
+                        new Chart(document.getElementById('categoryChart'), {
+                            type: 'bar',
+                            data: {
+                                labels: data.category_labels,
+                                datasets: [{
+                                    label: 'Stock Value',
+                                    data: data.category_values,
+                                    backgroundColor: '#44a2d2'
+                                }]
+                            }
+                        });
+
+                        // Status Chart
+                        new Chart(document.getElementById('statusChart'), {
+                            type: 'pie',
+                            data: {
+                                labels: data.status_labels,
+                                datasets: [{
+                                    data: data.status_values,
+                                    backgroundColor: ['#03d87f', '#f5325c']
+                                }]
+                            }
+                        });
+                    }
+                }
+            });
         });
     </script>
 </body>

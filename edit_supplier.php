@@ -1,23 +1,34 @@
 <?php
-
 /**
- * Supplier Management Page
- * Manage supplier database
+ * Edit Supplier Page
+ * Update existing supplier details
  */
 require("config.php");
 require("include/functions.php");
-require_once("include/pos_functions.php");
 require("include/authentication.php");
 require("include/admin_constants.php");
 
 // Require suppliers permission
 require_permission('suppliers');
 
+$id = $_GET['id'] ?? 0;
 $error = '';
 $success = '';
 
-// Handle add supplier
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
+// Fetch supplier details
+$sql = "SELECT * FROM suppliers WHERE id = :id";
+$query = $dbh->prepare($sql);
+$query->bindParam(':id', $id, PDO::PARAM_INT);
+$query->execute();
+$supplier = $query->fetch(PDO::FETCH_ASSOC);
+
+if (!$supplier) {
+    header("Location: manage_suppliers.php");
+    exit;
+}
+
+// Handle update supplier
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_supplier'])) {
     $supplier_name = trim($_POST['supplier_name']);
     $contact_name = trim($_POST['contact_name']);
     $phone = trim($_POST['phone']);
@@ -28,34 +39,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
         $error = 'Supplier name is required';
     } else {
         try {
-            $sql = "INSERT INTO suppliers (supplier_name, contact_name, phone, email, address, reg_by, reg_date) 
-                    VALUES (:supplier_name, :contact_name, :phone, :email, :address, :reg_by, NOW())";
+            $sql = "UPDATE suppliers SET 
+                    supplier_name = :supplier_name, 
+                    contact_name = :contact_name, 
+                    phone = :phone, 
+                    email = :email, 
+                    address = :address, 
+                    updated_by = :updated_by 
+                    WHERE id = :id";
             $query = $dbh->prepare($sql);
             $query->bindParam(':supplier_name', $supplier_name, PDO::PARAM_STR);
             $query->bindParam(':contact_name', $contact_name, PDO::PARAM_STR);
             $query->bindParam(':phone', $phone, PDO::PARAM_STR);
             $query->bindParam(':email', $email, PDO::PARAM_STR);
             $query->bindParam(':address', $address, PDO::PARAM_STR);
-            $query->bindParam(':reg_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+            $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+            $query->bindParam(':id', $id, PDO::PARAM_INT);
 
             if ($query->execute()) {
-                log_activity($dbh, 'ADD_SUPPLIER', "Added supplier: $supplier_name");
-                $success = 'Supplier added successfully!';
+                log_activity($dbh, 'UPDATE_SUPPLIER', "Updated supplier: $supplier_name (ID: $id)");
+                $success = 'Supplier updated successfully!';
+                
+                // Refresh supplier data
+                $sql = "SELECT * FROM suppliers WHERE id = :id";
+                $query = $dbh->prepare($sql);
+                $query->bindParam(':id', $id, PDO::PARAM_INT);
+                $query->execute();
+                $supplier = $query->fetch(PDO::FETCH_ASSOC);
             }
         } catch (PDOException $e) {
-            $error = 'Error adding supplier: ' . $e->getMessage();
+            $error = 'Error updating supplier: ' . $e->getMessage();
         }
     }
 }
-
-// $suppliers = $query->fetchAll(PDO::FETCH_ASSOC); // No longer needed for initial load
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
-    <title>Manage Suppliers | POS System</title>
+    <title>Edit Supplier | POS System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="shortcut icon" href="template/assets/images/favicon.ico">
@@ -63,8 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
     <link href="template/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
-    <link href="template/plugins/datatables/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
-    <link href="template/plugins/datatables/responsive.bootstrap4.min.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body class="dark-sidenav">
@@ -76,11 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
                 <div class="row">
                     <div class="col-sm-12">
                         <div class="page-title-box">
-                            <h4 class="page-title">Manage Suppliers</h4>
+                            <h4 class="page-title">Edit Supplier</h4>
                             <ol class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="dashboard.php">Home</a></li>
                                 <li class="breadcrumb-item"><a href="all_products.php">Inventory</a></li>
-                                <li class="breadcrumb-item active">Suppliers</li>
+                                <li class="breadcrumb-item"><a href="manage_suppliers.php">Suppliers</a></li>
+                                <li class="breadcrumb-item active">Edit Supplier</li>
                             </ol>
                         </div>
                     </div>
@@ -101,71 +123,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
                 <?php endif; ?>
 
                 <div class="row">
-                    <div class="col-lg-4">
+                    <div class="col-lg-8 mx-auto">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="card-title mb-0">Add New Supplier</h5>
+                                <h5 class="card-title mb-0">Update Supplier Details</h5>
                             </div>
                             <div class="card-body">
                                 <form method="POST" action="">
                                     <div class="form-group">
                                         <label for="supplier_name">Supplier Name <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="supplier_name" name="supplier_name" required>
+                                        <input type="text" class="form-control" id="supplier_name" name="supplier_name" value="<?php echo htmlspecialchars($supplier['supplier_name']); ?>" required>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="contact_name">Contact Person</label>
-                                        <input type="text" class="form-control" id="contact_name" name="contact_name">
+                                        <input type="text" class="form-control" id="contact_name" name="contact_name" value="<?php echo htmlspecialchars($supplier['contact_name'] ?? ''); ?>">
                                     </div>
 
                                     <div class="form-group">
                                         <label for="phone">Phone Number</label>
-                                        <input type="text" class="form-control" id="phone" name="phone">
+                                        <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($supplier['phone'] ?? ''); ?>">
                                     </div>
 
                                     <div class="form-group">
                                         <label for="email">Email Address</label>
-                                        <input type="email" class="form-control" id="email" name="email">
+                                        <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($supplier['email'] ?? ''); ?>">
                                     </div>
 
                                     <div class="form-group">
                                         <label for="address">Address</label>
-                                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                                        <textarea class="form-control" id="address" name="address" rows="3"><?php echo htmlspecialchars($supplier['address'] ?? ''); ?></textarea>
                                     </div>
 
-                                    <button type="submit" name="add_supplier" class="btn btn-primary btn-block">
-                                        <i class="fas fa-plus mr-1"></i> Add Supplier
-                                    </button>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <a href="manage_suppliers.php" class="btn btn-secondary btn-block">
+                                                <i class="fas fa-arrow-left mr-1"></i> Cancel
+                                            </a>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="submit" name="update_supplier" class="btn btn-primary btn-block">
+                                                <i class="fas fa-save mr-1"></i> Update Supplier
+                                            </button>
+                                        </div>
+                                    </div>
                                 </form>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">All Suppliers</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table id="suppliersTable" class="table table-striped table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Supplier Name</th>
-                                                <th>Contact Person</th>
-                                                <th>Phone</th>
-                                                <th>Email</th>
-                                                <th>Products</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tbody>
-                                            <!-- Data loaded via AJAX -->
-                                        </tbody>
-                                    </table>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -182,32 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
     <script src="template/assets/js/metismenu.min.js"></script>
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
-    <script src="template/plugins/datatables/jquery.dataTables.min.js"></script>
-    <script src="template/plugins/datatables/dataTables.bootstrap5.min.js"></script>
     <script src="template/assets/js/app.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            $('#suppliersTable').DataTable({
-                "processing": true,
-                "serverSide": true,
-                "ajax": {
-                    "url": "datatables/manage_suppliers.php",
-                    "type": "POST"
-                },
-                "columns": [
-                    { "data": 0 },
-                    { "data": 1 },
-                    { "data": 2 },
-                    { "data": 3 },
-                    { "data": 4 },
-                    { "data": 5 },
-                    { "data": 6, "orderable": false }
-                ],
-                "pageLength": 25
-            });
-        });
-    </script>
 </body>
 
 </html>

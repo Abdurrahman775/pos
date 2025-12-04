@@ -54,6 +54,42 @@ require_permission('transactions');
                                 <h5 class="card-title">All Transactions</h5>
                             </div>
                             <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <label>Date Range</label>
+                                        <div class="input-daterange input-group" id="date-range">
+                                            <input type="date" class="form-control" name="start_date" id="start_date" placeholder="Start Date" />
+                                            <input type="date" class="form-control" name="end_date" id="end_date" placeholder="End Date" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Cashier</label>
+                                        <select class="form-control" id="cashier_id">
+                                            <option value="">All Cashiers</option>
+                                            <?php
+                                            $cashiers_sql = "SELECT id, username FROM admins ORDER BY username";
+                                            $cashiers_query = $dbh->prepare($cashiers_sql);
+                                            $cashiers_query->execute();
+                                            while ($cashier = $cashiers_query->fetch(PDO::FETCH_ASSOC)) {
+                                                echo "<option value='" . $cashier['id'] . "'>" . $cashier['username'] . "</option>";
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Payment Method</label>
+                                        <select class="form-control" id="payment_method">
+                                            <option value="">All Methods</option>
+                                            <option value="CASH">Cash</option>
+                                            <option value="POS">POS</option>
+                                            <option value="TRANSFER">Transfer</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-primary btn-block" id="filterBtn">Filter</button>
+                                    </div>
+                                </div>
                                 <div class="table-responsive">
                                     <table id="transactionsTable" class="table table-striped table-bordered">
                                         <thead>
@@ -71,54 +107,6 @@ require_permission('transactions');
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                            <?php
-                                            $sql = "SELECT t.*, a.username, c.name as customer_name
-                                                    FROM transactions t
-                                                    LEFT JOIN admins a ON t.user_id = a.id
-                                                    LEFT JOIN customers c ON t.customer_id = c.customer_id
-                                                    ORDER BY t.transaction_date DESC";
-                                            $query = $dbh->prepare($sql);
-                                            $query->execute();
-                                            $transactions = $query->fetchAll(PDO::FETCH_ASSOC);
-
-                                            foreach ($transactions as $trans):
-                                            ?>
-                                                <tr>
-                                                    <td>#<?php echo $trans['transaction_id']; ?></td>
-                                                    <td><?php echo date('d/m/Y H:i', strtotime($trans['transaction_date'])); ?></td>
-                                                    <td><?php echo $trans['customer_name'] ?? 'Walk-in'; ?></td>
-                                                    <td><?php echo format_currency($dbh, $trans['subtotal']); ?></td>
-                                                    <td><?php echo format_currency($dbh, $trans['tax_amount']); ?></td>
-                                                    <td><?php echo format_currency($dbh, $trans['discount_amount']); ?></td>
-                                                    <td><strong><?php echo format_currency($dbh, $trans['total_amount']); ?></strong></td>
-                                                    <td><?php echo ucfirst($trans['payment_method']); ?></td>
-                                                    <td>
-                                                        <?php
-                                                        $badge = [
-                                                            'completed' => 'success',
-                                                            'void' => 'danger',
-                                                            'refunded' => 'warning',
-                                                            'held' => 'info'
-                                                        ];
-                                                        $status_badge = $badge[$trans['status']] ?? 'secondary';
-                                                        ?>
-                                                        <span class="badge badge-<?php echo $status_badge; ?>"><?php echo ucfirst($trans['status']); ?></span>
-                                                    </td>
-                                                    <td><?php echo $trans['username']; ?></td>
-                                                    <td>
-                                                        <a href="view_transaction.php?id=<?php echo $trans['transaction_id']; ?>"
-                                                            class="btn btn-sm btn-primary" title="View Details">
-                                                            <i class="fas fa-eye"></i>
-                                                        </a>
-                                                        <a href="#" onclick="printReceipt(<?php echo $trans['transaction_id']; ?>)"
-                                                            class="btn btn-sm btn-info" title="Print Receipt">
-                                                            <i class="fas fa-print"></i>
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -143,16 +131,69 @@ require_permission('transactions');
 
     <script>
         $(document).ready(function() {
-            $('#transactionsTable').DataTable({
-                order: [
-                    [1, 'desc']
+            // Client-side processing: fetch all transactions in one request
+            var table = $('#transactionsTable').DataTable({
+                "processing": true,
+                "serverSide": false,
+                "order": [
+                    [1, "desc"]
                 ],
-                pageLength: 25
+                "ajax": {
+                    "url": "datatables/transactions.php",
+                    "type": "POST",
+                    "data": function(d) {
+                        // request the full dataset from the server-side script
+                        d.fetch_all = 1;
+                        d.start_date = $('#start_date').val();
+                        d.end_date = $('#end_date').val();
+                        d.cashier_id = $('#cashier_id').val();
+                        d.payment_method = $('#payment_method').val();
+                    }
+                },
+                "columns": [{
+                        "data": 0
+                    },
+                    {
+                        "data": 1
+                    },
+                    {
+                        "data": 2
+                    },
+                    {
+                        "data": 3
+                    },
+                    {
+                        "data": 4
+                    },
+                    {
+                        "data": 5
+                    },
+                    {
+                        "data": 6
+                    },
+                    {
+                        "data": 7
+                    },
+                    {
+                        "data": 8
+                    },
+                    {
+                        "data": 9
+                    },
+                    {
+                        "data": 10,
+                        "orderable": false
+                    }
+                ]
+            });
+
+            $('#filterBtn').click(function() {
+                table.draw();
             });
         });
 
         function printReceipt(transactionId) {
-            window.open('receipt.php?id=' + transactionId, '_blank', 'width=800,height=600');
+            window.open('receipt.php?id=' + transactionId, '_blank', 'width=400,height=600');
         }
     </script>
 </body>

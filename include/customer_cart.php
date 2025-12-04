@@ -24,13 +24,24 @@ function product_exists($product_id)
 function addtocart($product_id)
 {
     $quantity = 1;
-    if (product_exists($product_id)) {
-        return;
+    $cart = isset($_SESSION['cart']) ? $_SESSION['cart'] : array();
+    $max = count($cart);
+    $flag = 0;
+
+    for ($i = 0; $i < $max; $i++) {
+        if (isset($cart[$i]['product_id']) && $product_id == $cart[$i]['product_id']) {
+            $_SESSION['cart'][$i]['quantity'] += $quantity;
+            $flag = 1;
+            break;
+        }
     }
-    $_SESSION['cart'][] = array(
-        'product_id' => $product_id,
-        'quantity' => $quantity
-    );
+
+    if ($flag == 0) {
+        $_SESSION['cart'][] = array(
+            'product_id' => $product_id,
+            'quantity' => $quantity
+        );
+    }
 }
 
 function remove_product($product_id)

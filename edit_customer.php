@@ -14,7 +14,7 @@ $error = '';
 $success = '';
 
 // Get customer details
-$sql = "SELECT * FROM customers WHERE id = :id";
+$sql = "SELECT * FROM customers WHERE customer_id = :id";
 $query = $dbh->prepare($sql);
 $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
 $query->execute();
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
     } else {
         try {
             $sql = "UPDATE customers SET name = :name, phone = :phone, email = :email, 
-                    address = :address, is_active = :is_active WHERE id = :id";
+                    address = :address, is_active = :is_active WHERE customer_id = :id";
             $query = $dbh->prepare($sql);
             $query->bindParam(':name', $name);
             $query->bindParam(':phone', $phone);
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
             $success = 'Customer updated successfully!';
 
             // Refresh customer data
-            $query = $dbh->prepare("SELECT * FROM customers WHERE id = :id");
+            $query = $dbh->prepare("SELECT * FROM customers WHERE customer_id = :id");
             $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
             $query->execute();
             $customer = $query->fetch(PDO::FETCH_ASSOC);

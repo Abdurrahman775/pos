@@ -8,13 +8,13 @@ require("../include/admin_constants.php");
 $requestData = $_REQUEST;
 
 // getting total number records without any search
-$sql = "SELECT COUNT(id) FROM products WHERE is_active= 1";
+$sql = "SELECT COUNT(id) FROM products";
 $query = $dbh->prepare($sql);
 $query->execute();
 $totalData = $query->fetchColumn();
 $totalFiltered = $totalData;
 
-$sql = "SELECT id, name, description, selling_price, qty_in_stock, low_stock_alert from products WHERE is_active= 1";
+$sql = "SELECT id, name, description, selling_price, qty_in_stock, low_stock_alert, is_active from products WHERE 1=1";
 
 if(!empty($requestData['search']['value'])) {
     // when there is a search parameter then we have to modify total number filtered rows as per search result.
@@ -35,7 +35,7 @@ $i = 1 + $requestData['start'];
 
 // preparing an array
 while($result = $query->fetch(PDO::FETCH_ASSOC)) {
-    $db_status = ($result['is_active'] == 0) ? "Deactivate" : "Activate";
+    $db_status = ($result['is_active'] == 1) ? "Deactivate" : "Activate";
     $nestedData = array();
 	$nestedData[] = $i;
     $nestedData[] = $result['name'];

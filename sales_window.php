@@ -2,163 +2,9 @@
 require("config.php");
 require("include/functions.php");
 require("include/admin_authentication.php");
-require("include/admin_constants.php");
 require("include/customer_cart.php");
 
-// Initialize variables
-$success = '';
-$error = '';
-$msg = '';
-$command = isset($_REQUEST['command']) ? $_REQUEST['command'] : '';
-
-$productSQL = "select * from products where qty_in_stock != 0 and is_active= 1 order by name asc";
-$productQuery = $dbh->prepare($productSQL);
-$productQuery->execute();
-$productResult = $productQuery->fetch(PDO::FETCH_ASSOC);
-
-if ($command == 'add') {
-    $product_id = $_REQUEST['product_id'];
-    addtocart($product_id);
-}
-
-if ($command == 'delete' && isset($_REQUEST['product_id']) && $_REQUEST['product_id'] > 0) {
-    remove_product($_REQUEST['product_id']);
-}
-
-if ($command == 'clear') {
-    unset($_SESSION['cart']);
-}
-
-if ($command == 'update') {
-    // Initialize cart if not set
-    $_SESSION['cart'] = isset($_SESSION['cart']) && is_array($_SESSION['cart']) ? $_SESSION['cart'] : [];
-    $msg = ''; // Initialize message variable
-
-    $max = count($_SESSION['cart']);
-    for ($i = 0; $i < $max; $i++) {
-        // Check if cart item exists at current index
-        if (!isset($_SESSION['cart'][$i]['product_id'])) continue;
-
-        $product_id = $_SESSION['cart'][$i]['product_id'];
-
-        // Validate request parameter exists
-        if (!isset($_REQUEST['product' . $product_id])) continue;
-
-        $quantity = intval($_REQUEST['product' . $product_id]);
-        $db_quantity = get_product_quantity($dbh, $product_id);
-
-        if ($quantity > $db_quantity) {
-            $msg .= "<div align=\"center\" style=\"margin-bottom:10px;\">" . convert_product_id($dbh, $product_id) . " quantity exceeded! Available is " . $db_quantity . "</div>";
-        } elseif ($quantity > 0 && $quantity <= 999) {
-            $_SESSION['cart'][$i]['quantity'] = $quantity;
-        } else {
-            $msg .= "<div align=\"center\" style=\"margin-bottom:10px;\">Product quantity can not be zero (0)</div>";
-        }
-    }
-}
-
-if ($command == 'finalise') {
-    $customer = isset($_REQUEST['customer']) ? $_REQUEST['customer'] : '';
-    if ($customer == '') {
-        $customer = "Customer";
-    }
-    $payment_type = isset($_REQUEST['payment_type']) ? $_REQUEST['payment_type'] : '';
-    $discount = isset($_REQUEST['discount']) ? $_REQUEST['discount'] : 0;
-    $total = isset($_REQUEST['hidden_order_total']) ? $_REQUEST['hidden_order_total'] : 0;
-    $items_count = isset($_REQUEST['hidden_items_count']) ? $_REQUEST['hidden_items_count'] : 0;
-
-    if ($payment_type == strtoupper("CASH")) {
-        $cash_received = $_REQUEST['cash_received'];
-        $cash_change = $_REQUEST['hidden_cash_change'];
-        $payment_ref = NULL;
-    } else if ($payment_type == strtoupper("POS")) {
-        $payment_ref = $_REQUEST['payment_ref'];
-        $cash_received = NULL;
-        $cash_change = NULL;
-    }
-
-    $order_id = date("dmyHis");
-    $actual_total = 0;
-
-    try {
-        $dbh->beginTransaction(); // Turn off autocommit mode
-        $saleSQL = "insert into sales (order_id, product_id, unit_price, quantity, total, reg_by, reg_date) values (:order_id, :product_id, :unit_price, :quantity, :total, :reg_by, :reg_date)";
-        $items = count($_SESSION['cart']);
-        for ($i = 0; $i < $items; $i++) {
-            $item_product_id = $_SESSION['cart'][$i]['product_id'];
-            $item_quantity = $_SESSION['cart'][$i]['quantity'];
-            $item_unit_price = get_product_price($dbh, $item_product_id);
-            $item_total = $item_unit_price * $item_quantity;
-            $actual_total += $item_total;
-
-            $saleQuery = $dbh->prepare($saleSQL);
-            $saleQuery->bindParam(':order_id', $order_id, PDO::PARAM_STR);
-            $saleQuery->bindParam(':product_id', $item_product_id, PDO::PARAM_INT);
-            $saleQuery->bindParam(':unit_price', $item_unit_price, PDO::PARAM_STR);
-            $saleQuery->bindParam(':quantity', $item_quantity, PDO::PARAM_INT);
-            $saleQuery->bindParam(':total', $item_total, PDO::PARAM_STR);
-            $saleQuery->bindParam(':reg_by', $admin, PDO::PARAM_STR);
-            $saleQuery->bindParam(':reg_date', $now, PDO::PARAM_STR);
-            $saleQuery->execute();
-        }
-
-        $updateSQL = "update products set qty_in_stock= (qty_in_stock - :quantity), updated_by= :updated_by where id= :product_id";
-        $update_items = count($_SESSION['cart']);
-        for ($x = 0; $x < $update_items; $x++) {
-            $update_product_id = $_SESSION['cart'][$x]['product_id'];
-            $update_quantity = $_SESSION['cart'][$x]['quantity'];
-
-            $updateQuery = $dbh->prepare($updateSQL);
-            $updateQuery->bindParam(':product_id', $update_product_id, PDO::PARAM_INT);
-            $updateQuery->bindParam(':quantity', $update_quantity, PDO::PARAM_INT);
-            $updateQuery->bindParam(':updated_by', $admin, PDO::PARAM_STR);
-            $updateQuery->execute();
-        }
-
-        $summarySQL = "insert into sales_summary (order_id, customer, payment_type, payment_ref, actual_total, discount, total, cash_received, cash_change, items_count, reg_by, reg_date) values (:order_id, :customer, :payment_type, :payment_ref, :actual_total, :discount, :total, :cash_received, :cash_change, :items_count, :reg_by, :reg_date)";
-        $summaryQuery = $dbh->prepare($summarySQL);
-        $summaryQuery->bindParam(':order_id', $order_id, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':customer', $customer, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':payment_type', $payment_type, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':payment_ref', $payment_ref, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':actual_total', $actual_total, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':discount', $discount, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':total', $total, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':cash_received', $cash_received, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':cash_change', $cash_change, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':items_count', $items_count, PDO::PARAM_INT);
-        $summaryQuery->bindParam(':reg_by', $admin, PDO::PARAM_STR);
-        $summaryQuery->bindParam(':reg_date', $now, PDO::PARAM_STR);
-        $summaryQuery->execute();
-
-        if ($payment_type == strtoupper("CASH")) {
-            $cashSQL = "update accounts set balance= (balance + :total) where account_type= 'CASH'";
-            $cashQuery = $dbh->prepare($cashSQL);
-            $cashQuery->bindParam(':total', $total, PDO::PARAM_STR);
-            $cashQuery->execute();
-        } else if ($payment_type == strtoupper("POS")) {
-            $posSQL = "update accounts set balance= (balance + :total) where account_type= 'POS'";
-            $posQuery = $dbh->prepare($posSQL);
-            $posQuery->bindParam(':total', $total, PDO::PARAM_STR);
-            $posQuery->execute();
-        }
-
-        if ($dbh->commit() == TRUE) {
-
-            //print_invoice($dbh, $order_id);  //Uncomment this line if your printer is attached to your computer
-            unset($_SESSION['cart']);
-            $success = '<script>$(function(){ bootbox.alert({centerVertical:true,size:"small",message:"Record saved",buttons:{ok:{label:"<i class=\'fa fa-check\'></i> OK",className:"btn-success btn-sm"}},callback:function(){bootbox.confirm({centerVertical:true,size:"small",message:"Print Receipt?",buttons:{cancel:{label:"<i class=\'fa fa-times\'></i> Cancel",className:"btn-danger btn-sm"},confirm:{label:"<i class=\'fa fa-check\'></i> OK",className:"btn-success btn-sm"}},callback:function(printConfirm){if(printConfirm){window.open("include/pdf_invoice.php?' . http_build_query(array('token' => base64_encode($order_id))) . '","_blank")}else{window.location.href="sales_window.php"}}})}})});</script>';
-            //$success = '<script>$(function(){ bootbox.alert({centerVertical:true,size:"small",message:"Record saved",buttons:{ok:{label:"<i class=\'fa fa-check\'></i> OK",className:"btn-success btn-sm"}},function(){bootbox.confirm({centerVertical:true,size:"small",message:"Print Receipt?",buttons:{cancel:{label:"<i class=\'fa fa-times\'></i> Cancel",className:"btn-danger btn-sm"},confirm:{label:"<i class=\'fa fa-check\'></i> OK",className:"btn-success btn-sm"}},function(printConfirm){if(printConfirm){window.open("../include/pdf_invoice.php?'.http_build_query(array('token'=>base64_encode($order_id)).'","_blank")}else{window.location.href="sales_window.php"}})});});</script>';
-        } else {
-            $dbh->rollback();
-            $error = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'ERROR! Try again', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-danger btn-sm' } } }); });</script>";
-        }
-    } catch (PDOException $e) {
-        $dbh->rollback();
-        $error = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'System Error!', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-danger btn-sm' } } }); });</script>";
-        //echo $e->getMessage();
-    }
-}
+$msg = "";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -178,7 +24,6 @@ if ($command == 'finalise') {
     <link href="template/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
-    <!-- <link href="template/plugins/sweet-alert2/sweetalert2.min.css" rel="stylesheet" type="text/css" /> -->
     <link href="template/plugins/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css" />
     <link href="template/plugins/datatables/responsive.bootstrap4.min.css" rel="stylesheet" type="text/css" />
     <!-- jQuery  -->
@@ -192,298 +37,342 @@ if ($command == 'finalise') {
     <script src="template/plugins/jquery-validation/jquery.validate.min.js"></script>
     <script src="template/plugins/jquery-validation/additional-methods.min.js"></script>
     <script src="template/assets/js/app.js" defer></script>
-    <script src="template/plugins/bootbox/bootbox.min.js"></script>
     <script src="template/plugins/datatables/jquery.dataTables.min.js"></script>
     <script src="template/plugins/datatables/dataTables.bootstrap5.min.js"></script>
     <script src="template/plugins/datatables/dataTables.responsive.min.js"></script>
     <script src="template/plugins/datatables/responsive.bootstrap4.min.js"></script>
-    <!-- <script src="template/plugins/sweet-alert2/sweetalert2.min.js"></script> -->
     <script>
-        function validateOrder() {
-            /*
-            var payment_type = document.cart_form.payment_type.value;
-            var cash_received = document.cart_form.cash_received.value;
-            var payment_ref = document.cart_form.payment_ref.value;
-
-            var err = 0;
-            
-            if(payment_type == "CASH") {
-                if(!cash_received) {
-                    $('#cash_received').qtip('show'); err += 1;
-                } else if(!number_pattern.test(cash_received)) {
-                    $('#cash_received').qtip({ style: { classes: 'qtip-red' }, content: { text: 'Invalid' }, show: { ready: true } });
-                    err += 1;
+        function addtocart(product_id) {
+            $.ajax({
+                url: "ajax/handle_cart.php",
+                method: "POST",
+                data: {
+                    action: "add",
+                    product_id: product_id
+                },
+                dataType: "json",
+                success: function(response) {
+                    if (response.status == "success") {
+                        refreshCart();
+                    } else {
+                        bootbox.alert(response.message);
+                    }
                 }
-            } else if(payment_type == "POS") {
-                if(!payment_ref) {
-                    $('#payment_ref').qtip('show'); err += 1;
-                } else if(!number_pattern.test(payment_ref)) {
-                    $('#payment_ref').qtip({ style: { classes: 'qtip-red' }, content: { text: 'Invalid' }, show: { ready: true } });
-                    err += 1;
-                }
-            }
-            
-            if(err != 0) {
-                return false;
-            }
-        */
+            });
         }
 
-        function addtocart(product_id) {
-            document.product_form.product_id.value = product_id;
-            document.product_form.command.value = 'add';
-            document.product_form.submit();
+        function update_cart(product_id, qty) {
+            $.ajax({
+                url: "ajax/handle_cart.php",
+                method: "POST",
+                data: {
+                    action: "update",
+                    product_id: product_id,
+                    quantity: qty
+                },
+                dataType: "json",
+                success: function(response) {
+                    if (response.status == 'success') {
+                        refreshCart();
+                    } else {
+                        bootbox.alert(response.message);
+                    }
+                }
+            });
         }
 
         function del(product_id) {
-            bootbox.confirm({
-                centerVertical: true,
-                size: "small",
-                title: "",
-                message: "Are you sure to delete?",
-                buttons: {
-                    cancel: {
-                        label: '<i class="fa fa-times"></i> No',
-                        className: 'btn btn-danger btn-sm'
-                    },
-                    confirm: {
-                        label: '<i class="fa fa-check"></i> Yes',
-                        className: 'btn btn-success btn-sm'
-                    }
+            $.ajax({
+                url: "ajax/handle_cart.php",
+                method: "POST",
+                data: {
+                    action: "delete",
+                    product_id: product_id
                 },
-                callback: function(output) {
-                    if (output) {
-                        document.cart_form.product_id.value = product_id;
-                        document.cart_form.command.value = 'delete';
-                        document.cart_form.submit();
+                dataType: "json",
+                success: function(response) {
+                    if (response.status == 'success') {
+                        refreshCart();
+                    } else {
+                        bootbox.alert(response.message);
                     }
                 }
             });
         }
 
         function clearCart() {
-            bootbox.confirm({
-                centerVertical: true,
-                size: "small",
-                title: "",
-                message: "Are you sure to clear cart?",
-                buttons: {
-                    cancel: {
-                        label: '<i class="fa fa-times"></i> No',
-                        className: 'btn btn-danger btn-sm'
-                    },
-                    confirm: {
-                        label: '<i class="fa fa-check"></i> Yes',
-                        className: 'btn btn-success btn-sm'
-                    }
-                },
-                callback: function(output) {
-                    if (output) {
-                        document.cart_form.command.value = 'clear';
-                        document.cart_form.submit();
-                    }
+            bootbox.confirm("Are you sure you want to clear the cart?", function(result) {
+                if (result) {
+                    $.ajax({
+                        url: "ajax/handle_cart.php",
+                        method: "POST",
+                        data: {
+                            action: "clear"
+                        },
+                        dataType: "json",
+                        success: function(response) {
+                            if (response.status == 'success') {
+                                refreshCart();
+                            }
+                        }
+                    });
                 }
             });
         }
 
-        function update_cart() {
-            document.cart_form.command.value = 'update';
-            document.cart_form.submit();
+        function numberOnly(e) {
+            var charCode = (e.which) ? e.which : e.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) return false;
+            return true;
         }
 
-
         $(document).ready(function() {
-
-            // var dataTable = $('#data-grid').DataTable({  // from all datatable
             var dataTable = $("#datatable").DataTable({
                 "responsive": true,
                 "ordering": false,
                 "pageLength": 10,
-                //"lengthChange": false,
-
                 "language": {
                     search: "_INPUT_",
                     searchPlaceholder: "Search Product"
                 },
                 "processing": true,
-                //"aoColumnDefs": [ {"sClass": "text-center", "aTargets": [0,3,4,5,6]} ],
-                "aoColumnDefs": [{
-                    "sClass": "text-center",
-                    "aTargets": [2, 3]
-                }, {
-                    "sClass": "text-right",
-                    "aTargets": [1]
-                }, {
-                    "bSortable": false,
-                    "aTargets": [0, 1, 2, 3]
-                }],
                 "serverSide": true,
                 "bLengthChange": false,
                 "ajax": {
                     url: "datatables/sales_window.php",
-                    type: "POST",
-                    error: function() {
-                        $(".data-grid-error").html("");
-                        $("#data-grid").append('<tbody class="data-grid-error text-center"><tr><th colspan="4">Could not fetch records</th></tr></tbody>');
-                        $("#data-grid_processing").css("display", "none");
+                    type: "POST"
+                }
+            });
+
+            // Unified Product Search & Barcode Logic
+            $("#product_input").autocomplete({
+                source: "ajax/search_products.php",
+                minLength: 2,
+                autoFocus: false,
+                select: function(event, ui) {
+                    $.ajax({
+                        url: "ajax/handle_cart.php",
+                        method: "POST",
+                        data: {
+                            action: "add",
+                            product_id: ui.item.id
+                        },
+                        dataType: "json",
+                        success: function(response) {
+                            if (response.status == "success") {
+                                refreshCart();
+                                $("#product_input").val('');
+                            } else {
+                                bootbox.alert(response.message);
+                            }
+                        }
+                    });
+                    return false;
+                }
+            }).autocomplete("instance")._renderItem = function(ul, item) {
+                return $("<li>").append("<div>" + item.label + "</div>").appendTo(ul);
+            };
+
+            $('#product_input').keypress(function(e) {
+                if (e.which == 13) {
+                    var menu = $("#product_input").autocomplete("widget");
+                    if (menu.is(":visible") && menu.find(".ui-state-active").length > 0) {
+                        return;
                     }
-                },
-            });
-
-            $('.dataTables_filter input').focus();
-
-            // Custom search functionality
-            $('#custom-search').on('keyup', function() {
-                var value = $(this).val();
-                dataTable.search(value).draw();
-            });
-
-            //remove the default 'Search' text for all DataTable search boxes
-            $.extend(true, $.fn.dataTable.defaults, {
-                language: {
-                    search: ""
-                }
-            });
-            //custom format of Search boxes
-            $('[type=search]').each(function() {
-                $(this).attr("placeholder", "Search Product...");
-            });
-
-            $.validator.addMethod(
-                "alphanumeric",
-                function(value, element) {
-                    return /^[A-Za-z0-9]+$/.test(value);
-                },
-                "Only letters and numbers are allowed"
-            );
-
-            // $("#cash_received, #payment_ref").qtip({ content:{ text: "Required" } });
-
-            // $('#amount_collected, #ref_no').hide();
-
-            if ($('.cash:radio[name=payment_type]').is(':checked')) {
-                $('#payment_ref').val('');
-                $('#ref_no').hide();
-                $('#amount_collected').show();
-            } else if ($('.pos:radio[name=payment_type]').is(':checked')) {
-                $('#cash_received').val('');
-                $('#amount_collected').hide();
-                $('#ref_no').show();
-            }
-
-            $('input[name=payment_type]:radio').change(function() {
-                if ($('.cash:radio[name=payment_type]').is(':checked')) {
-                    $('#payment_ref, #discount').val('');
-                    $('#discount').val(0);
-                    $('#ref_no').hide();
-                    $('#amount_collected').show();
-                } else if ($('.pos:radio[name=payment_type]').is(':checked')) {
-                    var order_total = '<?php echo get_order_total($dbh); ?>';
-                    var currency = '<?php echo get_currency($dbh); ?>';
-                    $('#cash_received, #hidden_order_total, #hidden_cash_change, #discount').val('');
-                    $('#display_order_total').text('');
-                    $('#discount').val(0);
-                    $('#display_order_total').text(currency + order_total);
-                    $('#hidden_order_total').val(order_total);
-                    $('#display_cash_change').text('N0.00');
-                    $('#amount_collected').hide();
-                    $('#ref_no').show();
+                    e.preventDefault();
+                    var barcode = $(this).val().trim();
+                    if (barcode != "") {
+                        $("#product_input").autocomplete("close");
+                        $.ajax({
+                            url: "ajax/handle_cart.php",
+                            method: "POST",
+                            data: {
+                                action: "add_by_barcode",
+                                barcode: barcode
+                            },
+                            dataType: "json",
+                            success: function(response) {
+                                if (response.status == "success") {
+                                    $('#product_input').val('');
+                                    refreshCart();
+                                } else {
+                                    bootbox.alert({
+                                        centerVertical: true,
+                                        size: "small",
+                                        message: "<i class='fa fa-times-circle text-danger'></i> " + response.message,
+                                        callback: function() {
+                                            $('#product_input').focus();
+                                        }
+                                    });
+                                    $('#product_input').val('');
+                                }
+                            }
+                        });
+                    }
                 }
             });
 
-            $('#cash_received').on('keyup', function() {
-                var cash_received = $(this).val();
-                var order_total = '<?php echo get_order_total($dbh); ?>';
-                var discount = $('#discount').val();
-                var cash_change = cash_received - (order_total - discount);
-                var final_total = (order_total - discount);
-                var currency = '<?php echo get_currency($dbh); ?>';
-
-                if (cash_received == '') {
-                    $('#display_order_total').text(currency + final_total.toFixed(2));
-                    $('#display_cash_change').text('N0.00');
-                    $('#hidden_order_total').val(final_total);
-                    $('#hidden_cash_change').val(0);
-                } else if (cash_received) {
-                    $('#display_order_total').text(currency + final_total.toFixed(2));
-                    $('#display_cash_change').text(currency + cash_change.toFixed(2));
-                    $('#hidden_order_total').val(final_total);
-                    $('#hidden_cash_change').val(cash_change);
-                } else {
-                    $('#display_order_total').text('<?php echo get_currency($dbh) . number_format(get_order_total($dbh), 2); ?>');
-                    $('#display_cash_change').text(currency + cash_change.toFixed(2));
-                    $('#hidden_order_total').val(final_total);
-                    $('#hidden_cash_change').val(cash_change);
+            $('#product_input').focus();
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('input, textarea, select, button, a, .ui-menu-item-wrapper').length) {
+                    $('#product_input').focus();
                 }
             });
 
-            $('#discount').on('keyup', function() {
-                var payment_type = document.cart_form.payment_type.value;
-                var discount = $(this).val();
-                var cash_received = $('#cash_received').val();
-                var order_total = '<?php echo get_order_total($dbh); ?>';
-                if (payment_type == "CASH") {
-                    var cash_change = cash_received - (order_total - discount);
-                } else if (payment_type == "POS") {
-                    var cash_change = 0;
+            // Customer autocomplete search
+            $("#customer").autocomplete({
+                source: 'ajax/search_customers.php',
+                minLength: 2,
+                autoFocus: false,
+                select: function(event, ui) {
+                    $("#customer").val(ui.item.value);
+                    $("#customer_id").val(ui.item.id);
+                    return false;
                 }
-                var final_total = (order_total - discount);
-                var currency = '<?php echo get_currency($dbh); ?>';
+            }).autocomplete("instance")._renderItem = function(ul, item) {
+                return $("<li>").append("<div><strong>" + item.label + "</strong></div>").appendTo(ul);
+            };
 
-                if (discount) {
-                    $('#display_order_total').text(currency + final_total.toFixed(2));
-                    $('#display_cash_change').text(currency + cash_change.toFixed(2));
-                    $('#hidden_order_total').val(final_total);
-                    $('#hidden_cash_change').val(cash_change);
-                } else {
-                    $('#discount').val('');
-                    $('#display_order_total').text('<?php echo get_currency($dbh) . number_format(get_order_total($dbh), 2); ?>');
-                    $('#display_cash_change').text(currency + cash_change.toFixed(2));
-                    $('#hidden_order_total').val(final_total);
-                    $('#hidden_cash_change').val(cash_change);
-                }
-            });
-
-            $('#finaliseTrigger').on("click", function(e) {
+            $('#finaliseTrigger').on('click', function(e) {
                 e.preventDefault();
+                var payment_type = $('input[name="payment_type"]:checked').val();
+                var cash_received = $('#cash_received').val();
+                var payment_ref = $('#payment_ref').val();
+                if (payment_type == "CASH" && !cash_received) {
+                    bootbox.alert("Cash received is required");
+                    return;
+                }
+                if (payment_type == "POS" && !payment_ref) {
+                    bootbox.alert("Payment reference is required");
+                    return;
+                }
+
                 bootbox.confirm({
                     centerVertical: true,
                     size: "small",
-                    title: "",
-                    message: "Finalise Order? This task is irreversible",
+                    message: "Are you sure you want to place this order?",
                     buttons: {
                         cancel: {
-                            label: '<i class="fa fa-times"></i> No',
-                            className: 'btn btn-danger btn-sm'
+                            label: 'No',
+                            className: 'btn-danger btn-sm'
                         },
                         confirm: {
-                            label: '<i class="fa fa-check"></i> Yes',
-                            className: 'btn btn-success btn-sm'
+                            label: 'Yes',
+                            className: 'btn-success btn-sm'
                         }
                     },
-                    callback: function(output) {
-                        if (output) {
-                            if (validateOrder() != false) {
-                                document.cart_form.payment_type.value;
-                                document.cart_form.cash_received.value;
-                                document.cart_form.payment_ref.value;
-                                document.cart_form.customer.value;
-                                document.cart_form.discount.value;
-                                document.cart_form.hidden_order_total.value;
-                                document.cart_form.hidden_cash_change.value;
-                                document.cart_form.command.value = 'finalise';
-                                document.cart_form.submit();
-                            }
+                    callback: function(result) {
+                        if (result) {
+                            var formData = $('#cart_form').serialize();
+                            formData += '&action=finalise';
+                            $.ajax({
+                                url: "ajax/process_sale.php",
+                                method: "POST",
+                                data: formData,
+                                dataType: "json",
+                                success: function(response) {
+                                    if (response.status == "success") {
+                                        bootbox.alert({
+                                            centerVertical: true,
+                                            size: "small",
+                                            message: "<i class='fa fa-check'></i> " + response.message,
+                                            callback: function() {
+                                                bootbox.confirm("Print Receipt?", function(printConfirm) {
+                                                    if (printConfirm) {
+                                                        // Send receipt to Xprinter via auto-print endpoint
+                                                        $.ajax({
+                                                            url: "ajax/print_receipt.php?token=" + response.token,
+                                                            method: "GET",
+                                                            dataType: "json",
+                                                            success: function(printResp) {
+                                                                bootbox.alert({
+                                                                    centerVertical: true,
+                                                                    size: "small",
+                                                                    message: "<i class='fa fa-print'></i> " + (printResp.message || "Receipt printed to Xprinter"),
+                                                                    callback: function() {
+                                                                        resetSalesWindow();
+                                                                    }
+                                                                });
+                                                            },
+                                                            error: function() {
+                                                                // Fallback: open PDF in browser if server printing fails
+                                                                window.open("include/pdf_invoice.php?token=" + response.token, "_blank");
+                                                                resetSalesWindow();
+                                                            }
+                                                        });
+                                                    } else {
+                                                        resetSalesWindow();
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    } else {
+                                        bootbox.alert(response.message);
+                                    }
+                                }
+                            });
                         }
                     }
                 });
             });
 
+            // Event delegation for dynamic elements
+            $('#cart_form').on('change', 'input[name="payment_type"]', function() {
+                var payment_type = $(this).val();
+                if (payment_type == 'CASH') {
+                    $('#ref_no').hide();
+                } else {
+                    $('#ref_no').show();
+                }
+            });
+
+            $('#cart_form').on('keyup', '#cash_received, #discount', function() {
+                var cash_received = parseFloat($('#cash_received').val()) || 0;
+                var discount = parseFloat($('#discount').val()) || 0;
+                var order_total = parseFloat($('#hidden_order_total').val()) || 0;
+
+                var final_total = order_total - discount;
+                var cash_change = cash_received - final_total;
+
+                $('#display_cash_change').text('N' + cash_change.toFixed(2));
+                $('#hidden_cash_change').val(cash_change);
+            });
         });
+
+        function resetSalesWindow() {
+            refreshCart();
+            $('#cash_received, #payment_ref, #discount').val('');
+            $('#display_cash_change').text('N0.00');
+            $('#customer').val('Customer').attr('data-customer-id', '');
+            $('#customer_id').val('');
+            $('#product_input').focus();
+        }
+
+        function refreshCart() {
+            $.ajax({
+                url: "ajax/handle_cart.php",
+                method: "POST",
+                data: {
+                    action: "get_cart_html"
+                },
+                dataType: "json",
+                success: function(response) {
+                    if (response.status == 'success') {
+                        $('#cart_form').html(response.html);
+                        // Re-apply logic after refresh
+                        var payment_type = $('input[name="payment_type"]:checked').val();
+                        if (payment_type == 'CASH') {
+                            $('#ref_no').hide();
+                        } else {
+                            $('#ref_no').show();
+                        }
+                    }
+                }
+            });
+        }
     </script>
     <style>
-        .dataTables_filter {
-            position: relative;
+        .dataTables_filter label {
             text-align: left;
             float: left;
             display: none;
@@ -502,63 +391,39 @@ if ($command == 'finalise') {
 </head>
 
 <body class="dark-sidenav">
-    <?php
-    // Displaying Notifications
-    echo "{$success} {$error}";
-    ?>
     <?php include('include/sidebar.php'); ?>
     <div class="page-wrapper">
         <div class="topbar">
             <?php require('template/top_nav_admin.php'); ?>
         </div>
-
         <div class="page-content">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-sm-12">
                         <div class="page-title-box">
-                            <div class="row">
-                                <div class="col">
-                                    <h4 class="page-title">Sales Window</h4>
-                                    <ol class="breadcrumb">
-                                        <li class="breadcrumb-item"><a href="javascript:void(0);">Home</a></li>
-                                        <li class="breadcrumb-item">Sales Management</li>
-                                        <li class="breadcrumb-item active">Sales Window</li>
-                                    </ol>
-                                </div>
-                            </div>
+                            <h4 class="page-title">Sales Window</h4>
                         </div>
                     </div>
                 </div>
-                <!-- body here -->
-
                 <div class="row">
                     <div class="col-lg-6">
                         <div class="card">
                             <div class="card-header">
-                                <h2 align="center" style="margin-bottom:0;">Our Products</h2>
+                                <h2 align="center" style="margin-bottom:0;">Products</h2>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        <input type="search" class="form-control form-control-sm" id="custom-search" placeholder="Search Product Name">
-                                        <form name="product_form" method="post" autocomplete="off">
-                                            <input type="hidden" name="product_id" id="product_id">
-                                            <input type="hidden" name="command" id="command">
-                                        </form>
-                                        <div class="container"><!-- Datatable -->
-                                            <table id="datatable" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="text-head-left">Product Name</th>
-                                                        <th class="text-head-center">Unit Price</th>
-                                                        <th class="text-head-center">Qty</th>
-                                                        <th style="width:70px;"><i class="fa fa-arrows-h fa-lg"></i></th>
-                                                    </tr>
-                                                </thead>
-                                            </table>
-                                        </div><!-- End of Datetable -->
-                                    </div>
+                                <div class="table-responsive">
+                                    <table id="datatable" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width: 100%;">
+                                        <thead>
+                                            <tr bgcolor="#FFFFFF" style="font-weight:bold">
+                                                <th class="text-head-center">#</th>
+                                                <th class="text-head-center">Name</th>
+                                                <th class="text-head-center">Unit Price</th>
+                                                <th class="text-head-center">Qty</th>
+                                                <th style="width:70px;"><i class="fa fa-arrows-h fa-lg"></i></th>
+                                            </tr>
+                                        </thead>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -569,38 +434,45 @@ if ($command == 'finalise') {
                                 <h2 align="center" style="margin-bottom:0;">Customer Cart</h2>
                             </div>
                             <div class="card-body">
-
                                 <div id="customer_tab">
+                                    <!-- Unified Product Search & Barcode Input -->
+                                    <div class="mt-2 mb-2">
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-barcode"></i></span></div>
+                                            <input type="text" class="form-control" id="product_input" placeholder="Scan Barcode or Search Product" autocomplete="off">
+                                        </div>
+                                    </div>
                                     <form name="cart_form" id="cart_form" method="post" autocomplete="off">
                                         <div style="color:#F00"><?php echo $msg; ?></div>
-                                        <table id="datatable" class="table table-sm table-striped table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;"> <?php
-                                                                                                                                                                                                            if (is_array($_SESSION['cart']) && !empty($_SESSION['cart'])) {
-                                                                                                                                                                                                                echo "<thead><tr bgcolor=\"#FFFFFF\" style=\"font-weight:bold\">
-                                        <th class=\"text-head-center\">#</th>
-                                        <th class=\"text-head-left\">Name</th>
-                                        <th class=\"text-head-left\">Unit Price</th>
-                                        <th class=\"text-head-left\">Qty</th>
-                                        <th class=\"text-head-left\">Amount</th>
-                                        <th class=\"text-head-center\"><a href=\"javascript:clearCart()\" title=\"Clear Customer Cart\">Del</a></th>
-                                        </tr></thead>";
-                                                                                                                                                                                                                $max = count($_SESSION['cart']);
-                                                                                                                                                                                                                for ($i = 0; $i < $max; $i++) {
-                                                                                                                                                                                                                    $product_id = $_SESSION['cart'][$i]['product_id'];
-                                                                                                                                                                                                                    $quantity = $_SESSION['cart'][$i]['quantity'];
-                                                                                                                                                                                                                    $product_name = convert_product_id($dbh, $product_id);
-                                                                                                                                                                                                                    if ($quantity == 0) continue;
-                                                                                                                                                                                                            ?>
+                                        <table class="table table-sm table-striped table-bordered dt-responsive nowrap" style="width: 100%;">
+                                            <?php if (is_array($_SESSION['cart']) && !empty($_SESSION['cart'])) { ?>
+                                                <thead>
+                                                    <tr bgcolor="#FFFFFF" style="font-weight:bold">
+                                                        <th class="text-head-center">#</th>
+                                                        <th class="text-head-left">Name</th>
+                                                        <th class="text-head-left">Unit Price</th>
+                                                        <th class="text-head-left">Qty</th>
+                                                        <th class="text-head-left">Amount</th>
+                                                        <th class="text-head-center"><a href="javascript:clearCart()" title="Clear Customer Cart">Del</a></th>
+                                                    </tr>
+                                                </thead>
+                                                <?php
+                                                $max = count($_SESSION['cart']);
+                                                for ($i = 0; $i < $max; $i++) {
+                                                    $product_id = $_SESSION['cart'][$i]['product_id'];
+                                                    $quantity = $_SESSION['cart'][$i]['quantity'];
+                                                    $product_name = convert_product_id($dbh, $product_id);
+                                                    if ($quantity == 0) continue;
+                                                ?>
                                                     <tr bgcolor="#FFFFFF">
                                                         <td width="6%" align="center"><?php echo $i + 1; ?></td>
                                                         <td width="37%"><?php echo $product_name; ?></td>
                                                         <td width="21%" align="right"><?php echo get_currency($dbh) . number_format(get_product_price($dbh, $product_id), 2); ?></td>
-                                                        <td width="10%"><input type="number" name="product<?php echo $product_id; ?>" value="<?php echo $quantity; ?>" onChange="update_cart()" style="width:40px !important; height:25px" /></td>
+                                                        <td width="10%"><input type="number" name="product<?php echo $product_id; ?>" value="<?php echo $quantity; ?>" onChange="update_cart(<?php echo $product_id; ?>, this.value)" style="width:40px !important; height:25px" /></td>
                                                         <td width="17%" align="right"><?php echo get_currency($dbh) . number_format(get_product_price($dbh, $product_id) * $quantity, 2); ?></td>
                                                         <td width="9%" align="center"><a href="javascript:del(<?php echo $product_id; ?>)" title="Delete Item"><i class="fa fa-trash fa-lg"></i></a></td>
                                                     </tr>
-                                                <?php
-                                                                                                                                                                                                                }
-                                                ?>
+                                                <?php } ?>
                                                 <tr bgcolor="#FFFFFF">
                                                     <td colspan="3" width="64%" style="font-weight:bold;">TOTAL</td>
                                                     <td width="10%" align="center" style="font-weight:bold;"><?php echo get_quantity_total($dbh); ?></td>
@@ -609,37 +481,29 @@ if ($command == 'finalise') {
                                                 </tr>
                                                 <tr>
                                                     <td colspan="6">
-                                                        <div style="font-weight:bold;"><span style=" display:inline-table; width:120px;">Payment</span> : <input type="radio" name="payment_type" value="CASH" id="payment_type_0" class="cash" checked>Cash
-                                                            <input type="radio" name="payment_type" value="POS" id="payment_type_1" class="pos">POS
-                                                        </div>
-                                                        <div id="amount_collected" style="font-weight:bold; margin-top:10px;"><span style="display:inline-table; width:120px;">Cash Received</span> : <input type="text" name="cash_received" id="cash_received" style="height:20px !important; width:150px !important;" onkeypress="return numberOnly(event)"></div>
-                                                        <div id="ref_no" style="font-weight:bold; margin-top:10px;"><span style="display:inline-table; width:120px;">Ref. No.</span> : <input type="text" name="payment_ref" id="payment_ref" style="height:20px !important; width:150px !important;"></div>
-                                                        <div style="font-weight:bold; margin-top:10px;"><span style=" display:inline-table; width:120px;">Name</span> : <input type="text" name="customer" id="customer" value="Customer" style="height:20px !important; width:150px !important;"></div>
+                                                        <div style="font-weight:bold;"><span style=" display:inline-table; width:120px;">Payment</span> : <input type="radio" name="payment_type" value="CASH" id="payment_type_0" class="cash" checked>Cash <input type="radio" name="payment_type" value="POS" id="payment_type_1" class="pos">POS</div>
+                                                        <div id="amount_collected" style="font-weight:bold; margin-top:10px;"><span style="display:inline-table; width:120px;">Amount Received</span> : <input type="text" name="cash_received" id="cash_received" style="height:20px !important; width:150px !important;" onkeypress="return numberOnly(event)"></div>
+                                                        <div id="ref_no" style="font-weight:bold; margin-top:10px; display:none;"><span style="display:inline-table; width:120px;">Ref. No.</span> : <input type="text" name="payment_ref" id="payment_ref" style="height:20px !important; width:150px !important;"></div>
+                                                        <div style="font-weight:bold; margin-top:10px;"><span style=" display:inline-table; width:120px;">Customer</span> : <input type="text" name="customer" id="customer" value="Customer" placeholder="Search or enter customer name" style="height:20px !important; width:150px !important;" autocomplete="off"><input type="hidden" id="customer_id" name="customer_id" value=""></div>
                                                         <div style="font-weight:bold; margin-top:10px;"><span style=" display:inline-table; width:120px;">Discount</span> : <input type="text" id="discount" name="discount" value="0" style="height:20px !important; width:150px !important;" onkeypress="return numberOnly(event)" /></div>
                                                         <div style="font-weight:bold; margin-top:10px;"><span style=" display:inline-table; width:120px;">Cash Change</span> : <span id="display_cash_change">N0.00</span></div>
                                                         <div style="font-size:larger; font-weight:bold; margin-top:10px;"><span style="display:inline-table; width:120px; color:#F00;">Order Total</span> : <span id="display_order_total"><?php echo get_currency($dbh) . number_format(get_order_total($dbh), 2); ?></span></div>
                                                         <div style="text-align: center;"><button id="finaliseTrigger" style="width: 150px; height: 40px;">Place Order</button></div>
+                                                        <input type="hidden" id="hidden_order_total" name="hidden_order_total" value="<?php echo get_order_total($dbh); ?>" />
+                                                        <input type="hidden" id="hidden_cash_change" name="hidden_cash_change" />
                                                     </td>
                                                 </tr>
-                                            <?php
-                                                                                                                                                                                                            } else {
-                                                                                                                                                                                                                echo "<tr bgColor='#FFFFFF'><td align=\"center\" style=\"color:#F00;\">Customer cart is empty!</td>";
-                                                                                                                                                                                                            }
-                                            ?>
+                                            <?php } else {
+                                                echo "<tr bgColor='#FFFFFF'><td align=\"center\" style=\"color:#F00;\">Customer cart is empty!</td></tr>";
+                                            } ?>
                                         </table>
-                                        <input type="hidden" id="hidden_order_total" name="hidden_order_total" />
-                                        <input type="hidden" id="hidden_cash_change" name="hidden_cash_change" />
-                                        <input type="hidden" id="hidden_items_count" name="hidden_items_count" value="<?php echo get_quantity_total($dbh); ?>" />
-                                        <input type="hidden" name="product_id" />
-                                        <input type="hidden" name="command" />
                                     </form>
-                                </div><!-- End of Customer Tab -->
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
             <footer class="footer text-center text-sm-left">
                 <?php include('template/copyright.php'); ?> <span class="d-none d-sm-inline-block float-right"><?php include('template/developed_by.php'); ?></span>
             </footer>

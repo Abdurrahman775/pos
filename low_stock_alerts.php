@@ -13,7 +13,7 @@ require("include/admin_constants.php");
 // Require low_stock permission
 require_permission('low_stock');
 
-$low_stock_products = get_low_stock_products($dbh);
+// $low_stock_products = get_low_stock_products($dbh); // No longer needed for initial load
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,7 +28,8 @@ $low_stock_products = get_low_stock_products($dbh);
     <link href="template/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
-    <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+    <link href="template/plugins/datatables/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
+    <link href="template/plugins/datatables/responsive.bootstrap4.min.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body class="dark-sidenav">
@@ -52,7 +53,8 @@ $low_stock_products = get_low_stock_products($dbh);
 
                 <div class="row">
                     <div class="col-12">
-                        <?php if (empty($low_stock_products)): ?>
+                        <?php // if (empty($low_stock_products)): // Logic moved to JS/AJAX ?>
+                        <!-- 
                             <div class="card">
                                 <div class="card-body text-center py-5">
                                     <i class="fas fa-check-circle text-success" style="font-size: 64px;"></i>
@@ -63,12 +65,13 @@ $low_stock_products = get_low_stock_products($dbh);
                                     </a>
                                 </div>
                             </div>
-                        <?php else: ?>
+                        -->
+                        <?php // else: ?>
                             <div class="card">
                                 <div class="card-header bg-warning">
                                     <h5 class="card-title text-white mb-0">
                                         <i class="fas fa-exclamation-triangle mr-2"></i>
-                                        <?php echo count($low_stock_products); ?> Product(s) Below Minimum Stock Level
+                                        Low Stock Alerts
                                     </h5>
                                 </div>
                                 <div class="card-body">
@@ -87,35 +90,14 @@ $low_stock_products = get_low_stock_products($dbh);
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php foreach ($low_stock_products as $product):
-                                                    $shortage = $product['min_stock_level'] - $product['stock_quantity'];
-                                                ?>
-                                                    <tr>
-                                                        <td><?php echo $product['id']; ?></td>
-                                                        <td><?php echo htmlspecialchars($product['name']); ?></td>
-                                                        <td><?php echo htmlspecialchars($product['category_name'] ?? '-'); ?></td>
-                                                        <td>
-                                                            <span class="badge badge-danger"><?php echo $product['stock_quantity']; ?></span>
-                                                        </td>
-                                                        <td><?php echo $product['min_stock_level']; ?></td>
-                                                        <td>
-                                                            <span class="text-danger font-weight-bold"><?php echo $shortage; ?></span>
-                                                        </td>
-                                                        <td><?php echo format_currency($dbh, $product['selling_price']); ?></td>
-                                                        <td>
-                                                            <a href="edit_product.php?id=<?php echo $product['id']; ?>"
-                                                                class="btn btn-sm btn-primary" title="Edit Product">
-                                                                <i class="fas fa-edit"></i> Update Stock
-                                                            </a>
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach; ?>
+
+                                                <!-- Data loaded via AJAX -->
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-                        <?php endif; ?>
+                        <?php // endif; ?>
                     </div>
                 </div>
             </div>
@@ -130,16 +112,31 @@ $low_stock_products = get_low_stock_products($dbh);
     <script src="template/assets/js/metismenu.min.js"></script>
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
-    <script src="datatables/datatables.min.js"></script>
+    <script src="template/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="template/plugins/datatables/dataTables.bootstrap5.min.js"></script>
     <script src="template/assets/js/app.js"></script>
 
     <script>
         $(document).ready(function() {
             $('#lowStockTable').DataTable({
-                order: [
-                    [5, 'desc']
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "datatables/low_stock_alerts.php",
+                    "type": "POST"
+                },
+                "columns": [
+                    { "data": 0 },
+                    { "data": 1 },
+                    { "data": 2 },
+                    { "data": 3 },
+                    { "data": 4 },
+                    { "data": 5 },
+                    { "data": 6 },
+                    { "data": 7, "orderable": false }
                 ],
-                pageLength: 25
+                "order": [[ 5, "desc" ]],
+                "pageLength": 25
             });
         });
     </script>

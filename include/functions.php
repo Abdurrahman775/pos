@@ -152,3 +152,4 @@ function get_product_quantity($dbh, $product_id)
 	$data = $result['qty_in_stock'];
 	return $data;
 }
+?>
