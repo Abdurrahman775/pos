@@ -2,108 +2,120 @@
 require("../config.php");
 require("../include/functions.php");
 
-// Columns to be displayed
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Columns to be displayed (maps to data array indices)
 $columns = [
-    0 => 'order_id',
-    1 => 'reg_date',
-    2 => 'customer',
-    3 => 'actual_total',
-    4 => 'tax_amount', // Placeholder
-    5 => 'discount',
-    6 => 'total',
-    7 => 'payment_type',
-    8 => 'status', // Placeholder
-    9 => 'reg_by',
+    0 => 'transaction_id',
+    1 => 'created_at',
+    2 => 'customer_id',
+    3 => 'subtotal',
+    4 => 'tax_amount',
+    5 => 'discount_amount',
+    6 => 'total_amount',
+    7 => 'payment_method',
+    8 => 'status',
+    9 => 'created_by',
     10 => 'actions'
 ];
 
-// Base Query
-$sql = "SELECT ss.* FROM sales_summary ss WHERE 1=1";
+// Base Query - fetch from transactions table
+$sql = "SELECT t.transaction_id, t.created_at, t.customer_id, t.user_id, t.subtotal, t.tax_amount, t.discount_amount, t.total_amount, t.payment_method, t.status, t.notes, t.created_by,
+        CASE WHEN t.customer_id IS NULL OR t.customer_id = 0 THEN 'Walk-in' ELSE c.name END as customer_name,
+        COALESCE(a.username, t.created_by) as cashier_username
+        FROM transactions t 
+        LEFT JOIN customers c ON t.customer_id = c.customer_id 
+        LEFT JOIN admins a ON (CAST(t.created_by AS UNSIGNED) = a.id OR t.created_by = a.username)
+        WHERE 1=1";
 
 $params = [];
 
-// Filters
+// Date Range Filter
 if (!empty($_POST['start_date']) && !empty($_POST['end_date'])) {
-    $sql .= " AND DATE(ss.reg_date) BETWEEN :start_date AND :end_date";
+    $sql .= " AND DATE(t.created_at) BETWEEN :start_date AND :end_date";
     $params[':start_date'] = $_POST['start_date'];
     $params[':end_date'] = $_POST['end_date'];
 }
 
+// Cashier Filter (user_id in transactions table)
 if (!empty($_POST['cashier_id'])) {
-    // sales_summary stores username in reg_by, not ID. Fetch username or use subquery.
-    $sql .= " AND ss.reg_by = (SELECT username FROM admins WHERE id = :cashier_id)";
-    $params[':cashier_id'] = $_POST['cashier_id'];
+    $sql .= " AND t.user_id = :user_id";
+    $params[':user_id'] = intval($_POST['cashier_id']);
 }
 
+// Payment Method Filter
 if (!empty($_POST['payment_method'])) {
-    $sql .= " AND ss.payment_type = :payment_method";
+    $sql .= " AND t.payment_method = :payment_method";
     $params[':payment_method'] = $_POST['payment_method'];
 }
 
-// Search
+// Search Filter
 if (!empty($_POST['search']['value'])) {
     $search_value = $_POST['search']['value'];
     $sql .= " AND (
-        ss.order_id LIKE :search 
-        OR ss.payment_ref LIKE :search 
-        OR ss.customer LIKE :search 
-        OR EXISTS (
-            SELECT 1 FROM sales s 
-            JOIN products p ON s.product_id = p.id 
-            WHERE s.order_id = ss.order_id 
-            AND p.name LIKE :search
-        )
+        t.transaction_id LIKE :search 
+        OR t.notes LIKE :search 
+        OR c.name LIKE :search 
+        OR c.phone LIKE :search
     )";
     $params[':search'] = "%$search_value%";
 }
 
-// Total Records (before filtering)
-$count_sql = "SELECT COUNT(*) FROM sales_summary";
-$query = $dbh->prepare($count_sql);
-$query->execute();
-$totalData = $query->fetchColumn();
+// Get Total Records Count (before filtering)
+$count_sql = "SELECT COUNT(*) FROM transactions";
+$count_query = $dbh->prepare($count_sql);
+$count_query->execute();
+$totalData = $count_query->fetchColumn();
 
-// Total Filtered Records
-$count_filtered_sql = "SELECT COUNT(*) FROM sales_summary ss WHERE 1=1";
+// Get Total Filtered Records Count
+$count_filtered_sql = "SELECT COUNT(*) FROM transactions t 
+                        LEFT JOIN customers c ON t.customer_id = c.customer_id 
+                        LEFT JOIN admins a ON (CAST(t.created_by AS UNSIGNED) = a.id OR t.created_by = a.username)
+                        WHERE 1=1";
+
 // Re-apply filters for count
 if (!empty($_POST['start_date']) && !empty($_POST['end_date'])) {
-    $count_filtered_sql .= " AND DATE(ss.reg_date) BETWEEN :start_date AND :end_date";
+    $count_filtered_sql .= " AND DATE(t.created_at) BETWEEN :start_date AND :end_date";
 }
 if (!empty($_POST['cashier_id'])) {
-    $count_filtered_sql .= " AND ss.reg_by = (SELECT username FROM admins WHERE id = :cashier_id)";
+    $count_filtered_sql .= " AND t.user_id = :user_id";
 }
 if (!empty($_POST['payment_method'])) {
-    $count_filtered_sql .= " AND ss.payment_type = :payment_method";
+    $count_filtered_sql .= " AND t.payment_method = :payment_method";
 }
 if (!empty($_POST['search']['value'])) {
     $count_filtered_sql .= " AND (
-        ss.order_id LIKE :search 
-        OR ss.payment_ref LIKE :search 
-        OR ss.customer LIKE :search 
-        OR EXISTS (
-            SELECT 1 FROM sales s 
-            JOIN products p ON s.product_id = p.id 
-            WHERE s.order_id = ss.order_id 
-            AND p.name LIKE :search
-        )
+        t.transaction_id LIKE :search 
+        OR t.notes LIKE :search 
+        OR c.name LIKE :search 
+        OR c.phone LIKE :search
     )";
 }
 
-$query = $dbh->prepare($count_filtered_sql);
-$query->execute($params);
-$totalFiltered = $query->fetchColumn();
+$count_filtered_query = $dbh->prepare($count_filtered_sql);
+foreach ($params as $key => $value) {
+    $count_filtered_query->bindValue($key, $value);
+}
+$count_filtered_query->execute();
+$totalFiltered = $count_filtered_query->fetchColumn();
 
 // Ordering
 if (isset($_POST['order'])) {
-    $column_name = $columns[$_POST['order'][0]['column']];
-    // Handle placeholders or mapped columns
-    if ($column_name == 'tax_amount' || $column_name == 'status' || $column_name == 'actions') {
-        $column_name = 'reg_date'; // Default sort
+    $column_index = $_POST['order'][0]['column'];
+    $column_name = isset($columns[$column_index]) ? $columns[$column_index] : 'created_at';
+
+    // Handle actions column (not sortable)
+    if ($column_name == 'actions') {
+        $column_name = 'created_at';
     }
-    $order = $_POST['order'][0]['dir'];
-    $sql .= " ORDER BY " . $column_name . " " . $order;
+
+    $order = (strtoupper($_POST['order'][0]['dir']) === 'ASC') ? 'ASC' : 'DESC';
+    $sql .= " ORDER BY t." . $column_name . " " . $order;
 } else {
-    $sql .= " ORDER BY ss.reg_date DESC";
+    $sql .= " ORDER BY t.created_at DESC";
 }
 
 // Pagination: only apply when not requesting full dataset
@@ -111,10 +123,11 @@ $fetch_all = false;
 if (isset($_REQUEST['fetch_all']) && $_REQUEST['fetch_all']) {
     $fetch_all = true;
 }
+
 if (!$fetch_all) {
     if (isset($_POST['length']) && $_POST['length'] != -1) {
-        $start = $_POST['start'];
-        $length = $_POST['length'];
+        $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
+        $length = isset($_POST['length']) ? intval($_POST['length']) : 10;
         $sql .= " LIMIT :start, :length";
     }
 }
@@ -124,61 +137,81 @@ $query = $dbh->prepare($sql);
 foreach ($params as $key => $value) {
     $query->bindValue($key, $value);
 }
+
 if (!$fetch_all) {
     if (isset($_POST['length']) && $_POST['length'] != -1) {
-        $query->bindValue(':start', (int)$start, PDO::PARAM_INT);
-        $query->bindValue(':length', (int)$length, PDO::PARAM_INT);
+        $query->bindValue(':start', $start, PDO::PARAM_INT);
+        $query->bindValue(':length', $length, PDO::PARAM_INT);
     }
 }
+
 $query->execute();
 $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
+// Build data array
 $data = [];
 foreach ($results as $row) {
     $nestedData = [];
-    $nestedData[] = '#' . $row['order_id'];
-    $nestedData[] = date('d/m/Y H:i', strtotime($row['reg_date']));
-    $nestedData[] = $row['customer'];
-    $nestedData[] = get_currency($dbh) . number_format($row['actual_total'], 2);
-    $nestedData[] = get_currency($dbh) . number_format(0, 2); // Tax not tracked
-    $nestedData[] = get_currency($dbh) . number_format($row['discount'], 2);
-    $nestedData[] = '<strong>' . get_currency($dbh) . number_format($row['total'], 2) . '</strong>';
-    $nestedData[] = ucfirst($row['payment_type']);
 
-    // Status is not in DB, assume Completed
-    $status = 'completed';
-    $badge = [
+    // Transaction ID
+    $nestedData[] = '#' . $row['transaction_id'];
+
+    // Date
+    $nestedData[] = date('d/m/Y H:i', strtotime($row['created_at']));
+
+    // Customer
+    $nestedData[] = $row['customer_name'];
+
+    // Subtotal
+    $nestedData[] = get_currency($dbh) . number_format($row['subtotal'], 2);
+
+    // Tax
+    $nestedData[] = get_currency($dbh) . number_format($row['tax_amount'], 2);
+
+    // Discount
+    $nestedData[] = get_currency($dbh) . number_format($row['discount_amount'], 2);
+
+    // Total (bold)
+    $nestedData[] = '<strong>' . get_currency($dbh) . number_format($row['total_amount'], 2) . '</strong>';
+
+    // Payment Method
+    $nestedData[] = ucfirst($row['payment_method']);
+
+    // Status Badge
+    $status = $row['status'] ?? 'completed';
+    $badge_colors = [
         'completed' => 'success',
         'void' => 'danger',
         'refunded' => 'warning',
         'held' => 'info'
     ];
-    $status_badge = $badge[$status] ?? 'secondary';
-    $nestedData[] = '<span class="badge badge-' . $status_badge . '">' . ucfirst($status) . '</span>';
+    $badge_color = $badge_colors[$status] ?? 'secondary';
+    $nestedData[] = '<span class="badge badge-' . $badge_color . '">' . ucfirst($status) . '</span>';
 
-    $nestedData[] = $row['reg_by'];
+    // Cashier (from admin lookup or fallback to created_by)
+    $nestedData[] = $row['cashier_username'];
 
-    // Use order_id for view/print
-    $actions = '<a href="view_transaction.php?id=' . $row['order_id'] . '" class="btn btn-sm btn-primary" title="View Details"><i class="fas fa-eye"></i></a> ';
-    $actions .= '<a href="#" onclick="printReceipt(\'' . $row['order_id'] . '\')" class="btn btn-sm btn-info" title="Print Receipt"><i class="fas fa-print"></i></a>';
+    // Actions
+    $actions = '<a href="receipt.php?id=' . $row['transaction_id'] . '" class="btn btn-sm btn-primary" title="View Receipt"><i class="fas fa-receipt"></i></a> ';
+    $actions .= '<a href="javascript:printReceipt(' . $row['transaction_id'] . ')" class="btn btn-sm btn-info" title="Print Receipt"><i class="fas fa-print"></i></a>';
 
     $nestedData[] = $actions;
-
     $data[] = $nestedData;
 }
 
-// If fetching all, return data property (DataTables accepts {data: [...]})
+// Return JSON response
 if ($fetch_all) {
     $json_data = [
         "data" => $data
     ];
 } else {
     $json_data = [
-        "draw" => intval($_POST['draw']),
+        "draw" => intval($_POST['draw'] ?? 1),
         "recordsTotal" => intval($totalData),
         "recordsFiltered" => intval($totalFiltered),
         "data" => $data
     ];
 }
 
+header('Content-Type: application/json');
 echo json_encode($json_data);
