@@ -16,12 +16,32 @@ try {
     $action = isset($_POST['action']) ? $_POST['action'] : '';
 
     if ($action == 'finalise') {
-        $customer_name = isset($_POST['customer']) ? trim($_POST['customer']) : 'Walk-in Customer';
+        $customer_type = isset($_POST['customer_type']) ? $_POST['customer_type'] : 'existing';
+        $customer_id = isset($_POST['customer_id']) ? intval($_POST['customer_id']) : null;
         $payment_type = isset($_POST['payment_type']) ? $_POST['payment_type'] : 'CASH';
         $discount = isset($_POST['discount']) ? floatval($_POST['discount']) : 0;
         $cash_received = isset($_POST['cash_received']) ? floatval($_POST['cash_received']) : 0;
         $payment_ref = isset($_POST['payment_ref']) ? $_POST['payment_ref'] : '';
-        $customer_id = isset($_POST['customer_id']) ? intval($_POST['customer_id']) : null;
+
+        // Determine customer name based on type
+        if ($customer_type === 'existing') {
+            // Get customer name from database
+            if ($customer_id) {
+                $sql = "SELECT name FROM customers WHERE customer_id = :customer_id LIMIT 1";
+                $query = $dbh->prepare($sql);
+                $query->bindParam(':customer_id', $customer_id, PDO::PARAM_INT);
+                $query->execute();
+                $cust = $query->fetch(PDO::FETCH_ASSOC);
+                $customer_name = $cust ? $cust['name'] : 'Customer';
+            } else {
+                $customer_name = 'Customer';
+                $customer_id = null;
+            }
+        } else {
+            // New customer - use entered name
+            $customer_name = isset($_POST['customer_name_new']) ? trim($_POST['customer_name_new']) : 'Customer';
+            $customer_id = null; // No customer ID for new customers
+        }
 
         // Validate cart
         if (empty($_SESSION['cart'])) {

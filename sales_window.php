@@ -219,13 +219,27 @@ $msg = "";
                 }
             });
 
-            // Customer autocomplete search
-            $("#customer").autocomplete({
+            // Customer type radio button toggle
+            $('input[name="customer_type"]').on('change', function() {
+                if ($(this).val() === 'existing') {
+                    $('#existing_customer_section').show();
+                    $('#new_customer_section').hide();
+                    $('#customer_search').focus();
+                } else {
+                    $('#existing_customer_section').hide();
+                    $('#new_customer_section').show();
+                    $('#customer_name_new').focus();
+                    $('#customer_id').val(''); // Clear customer ID for new customer
+                }
+            });
+
+            // Existing customer autocomplete search
+            $("#customer_search").autocomplete({
                 source: 'ajax/search_customers.php',
                 minLength: 2,
                 autoFocus: false,
                 select: function(event, ui) {
-                    $("#customer").val(ui.item.value);
+                    $("#customer_search").val(ui.item.label);
                     $("#customer_id").val(ui.item.id);
                     return false;
                 }
@@ -505,7 +519,19 @@ $msg = "";
                                                         <div style="font-weight:bold;"><span style=" display:inline-table; width:120px;">Payment</span> : <input type="radio" name="payment_type" value="CASH" id="payment_type_0" class="cash" checked>Cash <input type="radio" name="payment_type" value="POS" id="payment_type_1" class="pos">POS</div>
                                                         <div id="amount_collected" style="font-weight:bold; margin-top:10px;"><span style="display:inline-table; width:120px;">Amount Received</span> : <input type="text" name="cash_received" id="cash_received" style="height:20px !important; width:150px !important;" onkeypress="return numberOnly(event)"></div>
                                                         <div id="ref_no" style="font-weight:bold; margin-top:10px; display:none;"><span style="display:inline-table; width:120px;">Ref. No.</span> : <input type="text" name="payment_ref" id="payment_ref" style="height:20px !important; width:150px !important;"></div>
-                                                        <div style="font-weight:bold; margin-top:10px;"><span style=" display:inline-table; width:120px;">Customer</span> : <input type="text" name="customer" id="customer" value="Customer" placeholder="Search or enter customer name" style="height:20px !important; width:150px !important;" autocomplete="off"><input type="hidden" id="customer_id" name="customer_id" value=""></div>
+                                                        <div style="font-weight:bold; margin-top:10px;"><span style="display:inline-table; width:120px;">Customer</span> :
+                                                            <input type="radio" name="customer_type" value="existing" id="customer_type_existing" checked> Existing
+                                                            <input type="radio" name="customer_type" value="new" id="customer_type_new"> New Customer
+                                                        </div>
+                                                        <div id="existing_customer_section" style="font-weight:bold; margin-top:10px;">
+                                                            <span style="display:inline-table; width:120px;">Select Customer</span> :
+                                                            <input type="text" name="customer_search" id="customer_search" placeholder="Search customers..." style="height:20px !important; width:150px !important;" autocomplete="off">
+                                                            <input type="hidden" id="customer_id" name="customer_id" value="">
+                                                        </div>
+                                                        <div id="new_customer_section" style="font-weight:bold; margin-top:10px; display:none;">
+                                                            <span style="display:inline-table; width:120px;">Customer Name</span> :
+                                                            <input type="text" name="customer_name_new" id="customer_name_new" placeholder="Enter customer name" style="height:20px !important; width:150px !important;">
+                                                        </div>
                                                         <div style="font-weight:bold; margin-top:10px;"><span style=" display:inline-table; width:120px;">Discount</span> : <input type="text" id="discount" name="discount" value="0" style="height:20px !important; width:150px !important;" onkeypress="return numberOnly(event)" /></div>
                                                         <div style="font-weight:bold; margin-top:10px;"><span style=" display:inline-table; width:120px;">Cash Change</span> : <span id="display_cash_change">N0.00</span></div>
                                                         <div style="font-size:larger; font-weight:bold; margin-top:10px;"><span style="display:inline-table; width:120px; color:#F00;">Order Total</span> : <span id="display_order_total"><?php echo get_currency($dbh) . number_format(get_order_total($dbh), 2); ?></span></div>
