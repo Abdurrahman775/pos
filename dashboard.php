@@ -1,74 +1,74 @@
 <?php
 require("config.php");
 require("include/functions.php");
-require("include/admin_authentication.php");
-require("include/admin_constants.php");
 
-// Get dashboard statistics
-$stats = [];
+// Get Dashboard Stats
+// 1. Today's Sales
+$today_start = date('Y-m-d 00:00:00');
+$today_end = date('Y-m-d 23:59:59');
+$stmt = $dbh->prepare("SELECT COUNT(*) as count, SUM(total_amount) as amount FROM transactions WHERE created_at BETWEEN ? AND ? AND status = 'completed'");
+$stmt->execute([$today_start, $today_end]);
+$today_stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Total Sales Today
-$today = date('Y-m-d');
-$sql_today = "SELECT COUNT(*) as count, SUM(total) as amount FROM sales_summary WHERE DATE(reg_date) = :date";
-$query = $dbh->prepare($sql_today);
-$query->bindParam(':date', $today);
-$query->execute();
-$today_sales = $query->fetch(PDO::FETCH_ASSOC);
-$stats['today_sales'] = $today_sales['count'] ?? 0;
-$stats['today_amount'] = $today_sales['amount'] ?? 0;
+// 2. Month's Sales
+$month_start = date('Y-m-01 00:00:00');
+$month_end = date('Y-m-t 23:59:59');
+$stmt = $dbh->prepare("SELECT COUNT(*) as count, SUM(total_amount) as amount FROM transactions WHERE created_at BETWEEN ? AND ? AND status = 'completed'");
+$stmt->execute([$month_start, $month_end]);
+$month_stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Total Sales This Month
-$month_start = date('Y-m-01');
-$sql_month = "SELECT COUNT(*) as count, SUM(total) as amount FROM sales_summary WHERE DATE(reg_date) >= :date";
-$query = $dbh->prepare($sql_month);
-$query->bindParam(':date', $month_start);
-$query->execute();
-$month_sales = $query->fetch(PDO::FETCH_ASSOC);
-$stats['month_sales'] = $month_sales['count'] ?? 0;
-$stats['month_amount'] = $month_sales['amount'] ?? 0;
+// 3. Total Products
+$stmt = $dbh->query("SELECT COUNT(*) FROM products WHERE is_active = 1");
+$total_products = $stmt->fetchColumn();
 
-// Total Products
-$sql_products = "SELECT COUNT(*) as count FROM products WHERE is_active = 1";
-$query = $dbh->prepare($sql_products);
-$query->execute();
-$products_count = $query->fetch(PDO::FETCH_ASSOC);
-$stats['total_products'] = $products_count['count'] ?? 0;
+// 4. Low Stock
+$stmt = $dbh->query("SELECT COUNT(*) FROM products WHERE qty_in_stock < 10 AND is_active = 1");
+$low_stock = $stmt->fetchColumn();
 
-// Low Stock Products
-$sql_low_stock = "SELECT COUNT(*) as count FROM products WHERE qty_in_stock < 10 AND is_active = 1";
-$query = $dbh->prepare($sql_low_stock);
-$query->execute();
-$low_stock = $query->fetch(PDO::FETCH_ASSOC);
-$stats['low_stock'] = $low_stock['count'] ?? 0;
+$stats = [
+    'today_sales' => $today_stats['count'] ?? 0,
+    'today_amount' => $today_stats['amount'] ?? 0,
+    'month_sales' => $month_stats['count'] ?? 0,
+    'month_amount' => $month_stats['amount'] ?? 0,
+    'total_products' => $total_products,
+    'low_stock' => $low_stock
+];
 
-// Top 5 Products by Sales
-$sql_top = "SELECT product_id, SUM(quantity) as qty_sold, COUNT(*) as times_sold FROM sales GROUP BY product_id ORDER BY qty_sold DESC LIMIT 5";
-$query = $dbh->prepare($sql_top);
-$query->execute();
-$top_products = $query->fetchAll(PDO::FETCH_ASSOC);
+// 5. Daily Sales Chart (Last 7 days)
+$daily_sales = [];
+for ($i = 6; $i >= 0; $i--) {
+    $date = date('Y-m-d', strtotime("-$i days"));
+    $start = $date . ' 00:00:00';
+    $end = $date . ' 23:59:59';
+    $stmt = $dbh->prepare("SELECT COUNT(*) as transactions, SUM(total_amount) as amount FROM transactions WHERE created_at BETWEEN ? AND ? AND status = 'completed'");
+    $stmt->execute([$start, $end]);
+    $day_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    $daily_sales[] = [
+        'date' => $date,
+        'transactions' => $day_stats['transactions'] ?? 0,
+        'amount' => $day_stats['amount'] ?? 0
+    ];
+}
 
-// Sales by Payment Type (This Month)
-$sql_payment = "SELECT payment_type, COUNT(*) as count, SUM(total) as amount FROM sales_summary WHERE DATE(reg_date) >= :date GROUP BY payment_type";
-$query = $dbh->prepare($sql_payment);
-$query->bindParam(':date', $month_start);
-$query->execute();
-$payment_types = $query->fetchAll(PDO::FETCH_ASSOC);
+// 6. Payment Type Chart
+$stmt = $dbh->query("SELECT payment_method as payment_type, SUM(total_amount) as amount FROM transactions WHERE status = 'completed' GROUP BY payment_method");
+$payment_types = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Daily Sales Last 7 Days
-$sql_daily = "SELECT DATE(reg_date) as date, COUNT(*) as transactions, SUM(total) as amount FROM sales_summary WHERE reg_date >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY DATE(reg_date) ORDER BY date DESC";
-$query = $dbh->prepare($sql_daily);
-$query->execute();
-$daily_sales = $query->fetchAll(PDO::FETCH_ASSOC);
-
-// Initialize null checks
-if (!is_array($stats)) $stats = [];
-if (!is_array($top_products)) $top_products = [];
-if (!is_array($daily_sales)) $daily_sales = [];
-if (!is_array($payment_types)) $payment_types = [];
+// 7. Top 5 Products
+$stmt = $dbh->query("
+    SELECT p.name, SUM(ti.quantity) as total_qty 
+    FROM transaction_items ti 
+    JOIN products p ON ti.product_id = p.id 
+    JOIN transactions t ON ti.transaction_id = t.transaction_id
+    WHERE t.status = 'completed'
+    GROUP BY ti.product_id 
+    ORDER BY total_qty DESC 
+    LIMIT 5
+");
+$top_products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
     <title>Dashboard | POS System</title>
@@ -223,25 +223,23 @@ if (!is_array($payment_types)) $payment_types = [];
                                     <table class="table table-hover mb-0">
                                         <thead>
                                             <tr>
-                                                <th>Product ID</th>
+                                                <th>Product Name</th>
                                                 <th>Quantity Sold</th>
-                                                <th>Times Sold</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php
-                                            if (!empty($top_products)) {
-                                                foreach ($top_products as $product) {
-                                                    echo "<tr>";
-                                                    echo "<td>" . $product['product_id'] . "</td>";
-                                                    echo "<td><span class='badge badge-success'>" . $product['qty_sold'] . "</span></td>";
-                                                    echo "<td>" . $product['times_sold'] . "</td>";
-                                                    echo "</tr>";
-                                                }
-                                            } else {
-                                                echo "<tr><td colspan='3' class='text-center text-muted'>No sales data</td></tr>";
-                                            }
-                                            ?>
+                                            <?php if (!empty($top_products)): ?>
+                                                <?php foreach ($top_products as $product): ?>
+                                                    <tr>
+                                                        <td><?php echo htmlspecialchars($product['name']); ?></td>
+                                                        <td><?php echo $product['total_qty']; ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <tr>
+                                                    <td colspan="2" class="text-center">No sales data found</td>
+                                                </tr>
+                                            <?php endif; ?>
                                         </tbody>
                                     </table>
                                 </div>
