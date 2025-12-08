@@ -94,7 +94,7 @@ require_permission('customers');
                                         </thead>
                                         <tbody>
                                             <?php
-                                            $sql = "SELECT * FROM customers ORDER BY created_at DESC";
+                                            $sql = "SELECT * FROM customers WHERE del_status = 0 ORDER BY created_at ASC";
                                             $query = $dbh->prepare($sql);
                                             $query->execute();
                                             $customers = $query->fetchAll(PDO::FETCH_ASSOC);
@@ -124,11 +124,6 @@ require_permission('customers');
                                                             class="btn btn-sm btn-primary" title="Edit">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
-                                                        <button type="button" class="btn btn-sm btn-danger delete-customer" 
-                                                                data-id="<?php echo $customer['customer_id']; ?>" 
-                                                                title="Delete">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -152,6 +147,7 @@ require_permission('customers');
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
+    <script src="template/plugins/bootbox/bootbox.min.js"></script>
     <script src="template/assets/js/app.js"></script>
 
     <script>
@@ -161,33 +157,6 @@ require_permission('customers');
                     [5, 'desc']
                 ],
                 pageLength: 25
-            });
-
-            // Handle Delete Customer
-            $('#customersTable').on('click', '.delete-customer', function() {
-                var id = $(this).data('id');
-                var row = $(this).closest('tr');
-
-                if (confirm('Are you sure you want to delete this customer?')) {
-                    $.ajax({
-                        url: 'ajax/delete_customer.php',
-                        type: 'POST',
-                        data: { id: id },
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.success) {
-                                // Remove row from DataTable
-                                table.row(row).remove().draw(false);
-                                alert('Customer deleted successfully!');
-                            } else {
-                                alert('Error: ' + response.message);
-                            }
-                        },
-                        error: function() {
-                            alert('An error occurred while processing the request.');
-                        }
-                    });
-                }
             });
         });
     </script>

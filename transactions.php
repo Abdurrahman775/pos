@@ -26,8 +26,6 @@ require_permission('transactions');
     <link href="template/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
-    <!-- <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" /> -->
-    
     <link href="template/plugins/datatables/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
     <link href="template/plugins/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css" />
     <link href="template/plugins/datatables/responsive.bootstrap4.min.css" rel="stylesheet" type="text/css" />
@@ -434,22 +432,150 @@ require_permission('transactions');
         });
 
         function printReceipt(transactionId) {
-            var win = window.open('receipt.php?id=' + transactionId, '_blank', 'width=400,height=600');
-            if (win) {
-                win.focus();
-            } else {
-                bootbox.alert('Please allow popups for this site to print receipts.');
-            }
+            // Get the transaction token from the database
+            $.ajax({
+                url: "ajax/get_transaction_token.php",
+                method: "POST",
+                data: { transaction_id: transactionId },
+                dataType: "json",
+                success: function(tokenResponse) {
+                    if (tokenResponse.status == "success" && tokenResponse.token) {
+                        // Get receipt HTML
+                        $.ajax({
+                            url: "ajax/receipt_preview.php?token=" + tokenResponse.token,
+                            method: "GET",
+                            dataType: "json",
+                            success: function(response) {
+                                if (response.status == "success") {
+                                    // Create hidden iframe for printing
+                                    var printFrame = document.createElement('iframe');
+                                    printFrame.style.position = 'absolute';
+                                    printFrame.style.width = '0px';
+                                    printFrame.style.height = '0px';
+                                    printFrame.style.border = 'none';
+                                    document.body.appendChild(printFrame);
+                                    
+                                    // Write receipt HTML to iframe
+                                    var printDoc = printFrame.contentWindow.document;
+                                    printDoc.open();
+                                    printDoc.write('<html><head><title>Receipt</title>');
+                                    printDoc.write('<style>');
+                                    printDoc.write('@media print { @page { size: 80mm auto; margin: 0; } body { margin: 0; padding: 10px; } }');
+                                    printDoc.write('</style>');
+                                    printDoc.write('</head><body>');
+                                    printDoc.write(response.html);
+                                    printDoc.write('</body></html>');
+                                    printDoc.close();
+                                    
+                                    // Trigger print
+                                    printFrame.contentWindow.focus();
+                                    setTimeout(function() {
+                                        printFrame.contentWindow.print();
+                                        // Remove iframe after printing
+                                        setTimeout(function() {
+                                            document.body.removeChild(printFrame);
+                                        }, 1000);
+                                    }, 500);
+                                } else {
+                                    bootbox.alert("Error loading receipt: " + response.message);
+                                }
+                            },
+                            error: function() {
+                                bootbox.alert("Failed to load receipt for printing");
+                            }
+                        });
+                    } else {
+                        bootbox.alert("Error: " + (tokenResponse.message || 'Transaction not found'));
+                    }
+                },
+                error: function() {
+                    bootbox.alert("Failed to retrieve transaction");
+                }
+            });
         }
 
         function viewReceipt(transactionId) {
-            // Open receipt in a new window or modal
-            var win = window.open('receipt.php?id=' + transactionId + '&view=1', '_blank', 'width=800,height=600');
-            if (win) {
-                win.focus();
-            } else {
-                bootbox.alert('Please allow popups for this site to view receipts.');
-            }
+            // First, get the transaction token from the database
+            $.ajax({
+                url: "ajax/get_transaction_token.php",
+                method: "POST",
+                data: { transaction_id: transactionId },
+                dataType: "json",
+                success: function(tokenResponse) {
+                    if (tokenResponse.status == "success" && tokenResponse.token) {
+                        // Now fetch receipt preview with the token
+                        $.ajax({
+                            url: "ajax/receipt_preview.php?token=" + tokenResponse.token,
+                            method: "GET",
+                            dataType: "json",
+                            success: function(response) {
+                                if (response.status == "success") {
+                                    // Show receipt in modal popup
+                                    bootbox.dialog({
+                                        title: "Receipt #" + String(response.transaction_id).padStart(6, '0'),
+                                        centerVertical: true,
+                                        size: "large",
+                                        message: '<div style="max-height: 500px; overflow-y: auto; background: white; padding: 20px;">' + response.html + '</div>',
+                                        buttons: {
+                                            close: {
+                                                label: 'Close',
+                                                className: 'btn-secondary btn-sm'
+                                            },
+                                            print: {
+                                                label: '<i class="fa fa-print"></i> Print',
+                                                className: 'btn-primary btn-sm',
+                                                callback: function() {
+                                                    // Create hidden iframe for printing
+                                                    var printFrame = document.createElement('iframe');
+                                                    printFrame.style.position = 'absolute';
+                                                    printFrame.style.width = '0px';
+                                                    printFrame.style.height = '0px';
+                                                    printFrame.style.border = 'none';
+                                                    document.body.appendChild(printFrame);
+                                                    
+                                                    // Write receipt HTML to iframe
+                                                    var printDoc = printFrame.contentWindow.document;
+                                                    printDoc.open();
+                                                    printDoc.write('<html><head><title>Receipt</title>');
+                                                    printDoc.write('<style>');
+                                                    printDoc.write('@media print { @page { size: 80mm auto; margin: 0; } body { margin: 0; padding: 10px; } }');
+                                                    printDoc.write('</style>');
+                                                    printDoc.write('</head><body>');
+                                                    printDoc.write(response.html);
+                                                    printDoc.write('</body></html>');
+                                                    printDoc.close();
+                                                    
+                                                    // Trigger print
+                                                    printFrame.contentWindow.focus();
+                                                    setTimeout(function() {
+                                                        printFrame.contentWindow.print();
+                                                        // Remove iframe after printing
+                                                        setTimeout(function() {
+                                                            document.body.removeChild(printFrame);
+                                                        }, 1000);
+                                                    }, 500);
+                                                    
+                                                    return false; // Keep modal open
+                                                }
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    bootbox.alert("Error: " + (response.message || 'Failed to load receipt'));
+                                }
+                            },
+                            error: function() {
+                                bootbox.alert("Failed to load receipt preview");
+                            }
+                        });
+                    } else {
+                        bootbox.alert("Error: " + (tokenResponse.message || 'Transaction not found'));
+                    }
+                },
+                error: function() {
+                    bootbox.alert("Failed to retrieve transaction");
+                }
+            });
         }
 
         // Optional: Export function

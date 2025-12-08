@@ -19,6 +19,86 @@ $success = '';
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_settings'])) {
     try {
+        $dbh->beginTransaction();
+        
+        // Handle logo upload
+        if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] == UPLOAD_ERR_OK) {
+            $file = $_FILES['company_logo'];
+            $allowed_types = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+            $max_size = 2 * 1024 * 1024; // 2MB
+            
+            // Validate file type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime_type = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+            
+            if (!in_array($mime_type, $allowed_types)) {
+                throw new Exception('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.');
+            }
+            
+            // Validate file size
+            if ($file['size'] > $max_size) {
+                throw new Exception('File size exceeds 2MB limit.');
+            }
+            
+            // Generate unique filename
+            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $new_filename = 'logo_' . time() . '.' . $extension;
+            $upload_path = 'uploads/logo/' . $new_filename;
+            
+            // Delete old logo if exists
+            $old_logo_sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'company_logo'";
+            $old_logo_query = $dbh->prepare($old_logo_sql);
+            $old_logo_query->execute();
+            $old_logo = $old_logo_query->fetchColumn();
+            
+            if ($old_logo && file_exists($old_logo)) {
+                unlink($old_logo);
+            }
+            
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                // Save logo path to database
+                $check_sql = "SELECT id FROM system_settings WHERE setting_key = 'company_logo'";
+                $check_query = $dbh->prepare($check_sql);
+                $check_query->execute();
+                
+                if ($check_query->fetch()) {
+                    $sql = "UPDATE system_settings SET setting_value = :value, updated_by = :updated_by, updated_at = NOW() 
+                            WHERE setting_key = 'company_logo'";
+                    $query = $dbh->prepare($sql);
+                    $query->bindParam(':value', $upload_path, PDO::PARAM_STR);
+                    $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                    $query->execute();
+                } else {
+                    $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_by, updated_at) 
+                            VALUES ('company_logo', :value, 'text', :updated_by, NOW())";
+                    $query = $dbh->prepare($sql);
+                    $query->bindParam(':value', $upload_path, PDO::PARAM_STR);
+                    $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                    $query->execute();
+                }
+            } else {
+                throw new Exception('Failed to upload file.');
+            }
+        }
+        
+        // Handle logo deletion
+        if (isset($_POST['delete_logo']) && $_POST['delete_logo'] == '1') {
+            $logo_sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'company_logo'";
+            $logo_query = $dbh->prepare($logo_sql);
+            $logo_query->execute();
+            $logo_path = $logo_query->fetchColumn();
+            
+            if ($logo_path && file_exists($logo_path)) {
+                unlink($logo_path);
+            }
+            
+            $del_sql = "DELETE FROM system_settings WHERE setting_key = 'company_logo'";
+            $del_query = $dbh->prepare($del_sql);
+            $del_query->execute();
+        }
+        
         $settings_to_update = [
             'store_name',
             'store_address',
@@ -35,13 +115,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_settings'])) {
         foreach ($settings_to_update as $key) {
             if (isset($_POST[$key])) {
                 $value = trim($_POST[$key]);
-                update_setting($dbh, $key, $value, $_SESSION['pos_admin']);
+                
+                // Check if setting exists
+                $check_sql = "SELECT id FROM system_settings WHERE setting_key = :key";
+                $check_query = $dbh->prepare($check_sql);
+                $check_query->bindParam(':key', $key, PDO::PARAM_STR);
+                $check_query->execute();
+                
+                if ($check_query->fetch()) {
+                    // Update existing setting
+                    $sql = "UPDATE system_settings SET setting_value = :value, updated_by = :updated_by, updated_at = NOW() 
+                            WHERE setting_key = :key";
+                    $query = $dbh->prepare($sql);
+                    $query->bindParam(':value', $value, PDO::PARAM_STR);
+                    $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                    $query->bindParam(':key', $key, PDO::PARAM_STR);
+                    $query->execute();
+                } else {
+                    // Insert new setting
+                    $sql = "INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_by, updated_at) 
+                            VALUES (:key, :value, 'text', :updated_by, NOW())";
+                    $query = $dbh->prepare($sql);
+                    $query->bindParam(':key', $key, PDO::PARAM_STR);
+                    $query->bindParam(':value', $value, PDO::PARAM_STR);
+                    $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                    $query->execute();
+                }
             }
         }
 
-        log_activity($dbh, 'UPDATE_SETTINGS', 'Updated system settings');
+        // Log activity
+        if (isset($_SESSION['pos_admin'])) {
+            log_activity($dbh, 'UPDATE', 'Updated system settings');
+        }
+        
+        $dbh->commit();
         $success = 'Settings updated successfully!';
     } catch (Exception $e) {
+        $dbh->rollBack();
         $error = 'Error updating settings: ' . $e->getMessage();
     }
 }
@@ -105,7 +216,7 @@ foreach ($results as $row) {
 
                 <div class="row">
                     <div class="col-lg-10 mx-auto">
-                        <form method="POST" action="">
+                        <form method="POST" action="" enctype="multipart/form-data">
                             <!-- Store Information -->
                             <div class="card">
                                 <div class="card-header">
@@ -142,6 +253,29 @@ foreach ($results as $row) {
                                                 <label for="store_address">Store Address</label>
                                                 <input type="text" class="form-control" id="store_address" name="store_address"
                                                     value="<?php echo htmlspecialchars($settings['store_address'] ?? ''); ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="form-group">
+                                                <label for="company_logo">Company Logo</label>
+                                                <?php if (!empty($settings['company_logo']) && file_exists($settings['company_logo'])): ?>
+                                                    <div class="mb-2">
+                                                        <img src="<?php echo htmlspecialchars($settings['company_logo']); ?>" 
+                                                             alt="Current Logo" 
+                                                             style="max-height: 100px; max-width: 200px; border: 1px solid #ddd; padding: 5px; background: #fff;">
+                                                        <div class="mt-2">
+                                                            <label class="custom-control custom-checkbox">
+                                                                <input type="checkbox" name="delete_logo" value="1" class="custom-control-input">
+                                                                <span class="custom-control-label">Delete current logo</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <input type="file" class="form-control-file" id="company_logo" name="company_logo" accept="image/png,image/jpeg,image/jpg,image/gif">
+                                                <small class="form-text text-muted">Upload a new logo (PNG, JPG, JPEG, GIF. Max 2MB). Leave empty to keep current logo.</small>
                                             </div>
                                         </div>
                                     </div>

@@ -8,6 +8,9 @@ require("include/functions.php");
 require("include/admin_authentication.php");
 require("include/admin_constants.php");
 
+// Start output buffering to prevent "headers already sent" errors
+ob_start();
+
 // Require customers permission
 require_permission('customers');
 
@@ -34,9 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_customer'])) {
 
             if ($query->execute()) {
                 log_activity($dbh, 'ADD_CUSTOMER', "Added new customer: $name");
-                // Redirect to customers page after successful addition
+                
+                // Clean output buffer and redirect
+                ob_end_clean();
                 header("Location: customers.php?success=1");
-                exit;
+                exit();
             }
         } catch (PDOException $e) {
             $error = 'Error adding customer: ' . $e->getMessage();

@@ -1,26 +1,40 @@
 <?php
+session_start();
 require("../config.php");
 
-$search = isset($_GET['term']) ? trim($_GET['term']) : '';
-$customers = [];
+$term = isset($_GET['term']) ? trim($_GET['term']) : '';
 
-if (!empty($search)) {
-    // customers table uses `customer_id` as primary key; alias it to `id` for frontend compatibility
-    $sql = "SELECT customer_id AS id, name, phone FROM customers WHERE (name LIKE :search OR phone LIKE :search) AND is_active = 1 ORDER BY name ASC LIMIT 10";
-    $query = $dbh->prepare($sql);
-    // bindValue accepts expressions; bindParam requires a variable reference
-    $query->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
-    $query->execute();
-    $results = $query->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($results as $row) {
-        $customers[] = [
-            'id' => $row['id'],
-            'label' => $row['name'] . ' (' . $row['phone'] . ')',
-            'value' => $row['name']
-        ];
-    }
+if (strlen($term) < 1) {
+    echo json_encode([]);
+    exit;
 }
 
-header('Content-Type: application/json');
-echo json_encode($customers);
+try {
+    $sql = "SELECT customer_id, name, phone 
+            FROM customers 
+            WHERE name LIKE :term 
+            AND is_active = 1
+            AND del_status = 0
+            LIMIT 10";
+    
+    $query = $dbh->prepare($sql);
+    $search_term = "%{$term}%";
+    $query->bindParam(':term', $search_term, PDO::PARAM_STR);
+    $query->execute();
+    $customers = $query->fetchAll(PDO::FETCH_ASSOC);
+    
+    $result = [];
+    foreach ($customers as $customer) {
+        $phone_text = $customer['phone'] ? " - " . $customer['phone'] : "";
+        $result[] = [
+            'id' => $customer['customer_id'],
+            'label' => $customer['name'] . $phone_text,
+            'value' => $customer['name']
+        ];
+    }
+    
+    echo json_encode($result);
+} catch (PDOException $e) {
+    echo json_encode([]);
+}
+?>

@@ -8,7 +8,15 @@ $cdate = date('Y-m-d');
 // Get Currency
 function get_currency($dbh)
 {
-	return $data = 'NGN';
+	try {
+		$sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'currency_code' LIMIT 1";
+		$query = $dbh->prepare($sql);
+		$query->execute();
+		$result = $query->fetch(PDO::FETCH_ASSOC);
+		return $result ? $result['setting_value'] : 'NGN';
+	} catch (PDOException $e) {
+		return 'NGN'; // Fallback to NGN if query fails
+	}
 }
 
 // Validation Patterns

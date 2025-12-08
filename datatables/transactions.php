@@ -24,11 +24,15 @@ $columns = [
 
 // Base Query - fetch from transactions table
 $sql = "SELECT t.transaction_id, t.created_at, t.customer_id, t.user_id, t.subtotal, t.tax_amount, t.discount_amount, t.total_amount, t.payment_method, t.status, t.notes, t.created_by,
-        CASE WHEN t.customer_id IS NULL OR t.customer_id = 0 THEN 'Walk-in' ELSE c.name END as customer_name,
-        COALESCE(a.username, t.created_by) as cashier_username
+        CASE 
+            WHEN c.name IS NOT NULL THEN c.name
+            WHEN t.notes LIKE '%Customer:%' THEN TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(t.notes, 'Customer:', -1), '|', 1))
+            ELSE 'Walk-in'
+        END as customer_name,
+        COALESCE(CONCAT(a.fname, ' ', a.sname), a.username, t.created_by) as cashier_name
         FROM transactions t 
         LEFT JOIN customers c ON t.customer_id = c.customer_id 
-        LEFT JOIN admins a ON (CAST(t.created_by AS UNSIGNED) = a.id OR t.created_by = a.username)
+        LEFT JOIN admins a ON t.user_id = a.id
         WHERE 1=1";
 
 $params = [];
@@ -73,7 +77,7 @@ $totalData = $count_query->fetchColumn();
 // Get Total Filtered Records Count
 $count_filtered_sql = "SELECT COUNT(*) FROM transactions t 
                         LEFT JOIN customers c ON t.customer_id = c.customer_id 
-                        LEFT JOIN admins a ON (CAST(t.created_by AS UNSIGNED) = a.id OR t.created_by = a.username)
+                        LEFT JOIN admins a ON t.user_id = a.id
                         WHERE 1=1";
 
 // Re-apply filters for count
@@ -188,8 +192,8 @@ foreach ($results as $row) {
     $badge_color = $badge_colors[$status] ?? 'secondary';
     $nestedData[] = '<span class="badge badge-' . $badge_color . '">' . ucfirst($status) . '</span>';
 
-    // Cashier (from admin lookup or fallback to created_by)
-    $nestedData[] = $row['cashier_username'];
+    // Cashier (full name from admin lookup or fallback to created_by)
+    $nestedData[] = $row['cashier_name'];
 
     // Actions
     $actions = '<a href="receipt.php?id=' . $row['transaction_id'] . '" class="btn btn-sm btn-primary" title="View Receipt"><i class="fas fa-receipt"></i></a> ';

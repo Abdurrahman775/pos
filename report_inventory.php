@@ -6,15 +6,52 @@ require("include/authentication.php");
 require("include/admin_constants.php");
 require_permission('reports');
 
-// Get inventory data
+// Initialize filters
+$category_id = isset($_GET['category_id']) ? intval($_GET['category_id']) : 0;
+$stock_status = isset($_GET['stock_status']) ? $_GET['stock_status'] : '';
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+// Build dynamic SQL query
 $sql = "SELECT p.*, c.name as category_name 
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id 
-        WHERE p.is_active = 1 
-        ORDER BY p.name ASC";
+        WHERE p.is_active = 1";
+
+$params = array();
+
+// Filter by category
+if ($category_id > 0) {
+    $sql .= " AND p.category_id = ?";
+    $params[] = $category_id;
+}
+
+// Filter by stock status
+if ($stock_status === 'low') {
+    $sql .= " AND p.qty_in_stock <= p.low_stock_alert";
+} elseif ($stock_status === 'out') {
+    $sql .= " AND p.qty_in_stock = 0";
+} elseif ($stock_status === 'ok') {
+    $sql .= " AND p.qty_in_stock > p.low_stock_alert";
+}
+
+// Search filter
+if (!empty($search)) {
+    $sql .= " AND (p.name LIKE ? OR p.description LIKE ?)";
+    $params[] = "%{$search}%";
+    $params[] = "%{$search}%";
+}
+
+$sql .= " ORDER BY p.name ASC";
+
 $query = $dbh->prepare($sql);
-$query->execute();
+$query->execute($params);
 $products = $query->fetchAll(PDO::FETCH_ASSOC);
+
+// Get all categories for filter dropdown
+$cat_sql = "SELECT id, name FROM categories ORDER BY name ASC";
+$cat_query = $dbh->prepare($cat_sql);
+$cat_query->execute();
+$categories = $cat_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate totals
 $total_items = 0;
@@ -65,6 +102,69 @@ foreach ($products as $p) {
                                 <li class="breadcrumb-item"><a href="reports_dashboard.php">Reports</a></li>
                                 <li class="breadcrumb-item active">Inventory Report</li>
                             </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="header-title mb-3">Filter Report</h5>
+                                <form method="GET" action="" id="filterForm">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Search Product</label>
+                                                <input type="text" class="form-control form-control-sm" name="search"
+                                                    placeholder="Product name or description" value="<?php echo htmlspecialchars($search); ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Category</label>
+                                                <select class="form-control form-control-sm" name="category_id">
+                                                    <option value="">-- All Categories --</option>
+                                                    <?php foreach ($categories as $cat): ?>
+                                                        <option value="<?php echo $cat['id']; ?>"
+                                                            <?php echo ($category_id == $cat['id']) ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($cat['name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Stock Status</label>
+                                                <select class="form-control form-control-sm" name="stock_status">
+                                                    <option value="">-- All Status --</option>
+                                                    <option value="ok" <?php echo ($stock_status === 'ok') ? 'selected' : ''; ?>>In Stock</option>
+                                                    <option value="low" <?php echo ($stock_status === 'low') ? 'selected' : ''; ?>>Low Stock</option>
+                                                    <option value="out" <?php echo ($stock_status === 'out') ? 'selected' : ''; ?>>Out of Stock</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>&nbsp;</label>
+                                                <div>
+                                                    <button type="submit" class="btn btn-primary btn-sm">
+                                                        <i class="fa fa-filter"></i> Apply Filter
+                                                    </button>
+                                                    <a href="report_inventory.php" class="btn btn-secondary btn-sm">
+                                                        <i class="fa fa-refresh"></i> Clear
+                                                    </a>
+                                                    <button type="button" class="btn btn-success btn-sm" id="exportBtn">
+                                                        <i class="fa fa-download"></i> Export
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -184,15 +284,55 @@ foreach ($products as $p) {
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
     <script src="datatables/datatables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
         $(document).ready(function() {
-            $('#inventoryTable').DataTable();
+            $('#inventoryTable').DataTable({
+                dom: 'Bfrtip',
+                buttons: [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ]
+            });
+
+            // Export to Excel/CSV
+            $('#exportBtn').click(function() {
+                var table = $('#inventoryTable').DataTable();
+                var data = table.rows({
+                    search: 'applied'
+                }).data();
+
+                var ws_data = [
+                    ['Product Name', 'Category', 'Qty', 'Cost Price', 'Selling Price', 'Total Cost', 'Total Sales', 'Status']
+                ];
+
+                data.each(function(row) {
+                    ws_data.push([
+                        $(row[0]).text(),
+                        $(row[1]).text(),
+                        $(row[2]).text(),
+                        $(row[3]).text(),
+                        $(row[4]).text(),
+                        $(row[5]).text(),
+                        $(row[6]).text(),
+                        $(row[7]).text()
+                    ]);
+                });
+
+                var ws = XLSX.utils.aoa_to_sheet(ws_data);
+                var wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+                XLSX.writeFile(wb, "inventory_report_<?php echo date('Y-m-d'); ?>.xlsx");
+            });
 
             // Load Charts
             $.ajax({
                 url: 'ajax/get_report_data.php',
-                data: { action: 'inventory_summary' },
+                data: {
+                    action: 'inventory_summary',
+                    category_id: <?php echo $category_id; ?>,
+                    stock_status: '<?php echo $stock_status; ?>'
+                },
                 dataType: 'json',
                 success: function(response) {
                     if (response.status == 'success') {
@@ -208,6 +348,14 @@ foreach ($products as $p) {
                                     data: data.category_values,
                                     backgroundColor: '#44a2d2'
                                 }]
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
                             }
                         });
 
@@ -218,12 +366,20 @@ foreach ($products as $p) {
                                 labels: data.status_labels,
                                 datasets: [{
                                     data: data.status_values,
-                                    backgroundColor: ['#03d87f', '#f5325c']
+                                    backgroundColor: ['#03d87f', '#f5325c', '#ffc107']
                                 }]
+                            },
+                            options: {
+                                responsive: true
                             }
                         });
                     }
                 }
+            });
+
+            // Real-time search and filter
+            $('#filterForm').on('change', 'select', function() {
+                $('#filterForm').submit();
             });
         });
     </script>

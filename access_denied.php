@@ -12,12 +12,23 @@ if(session_status() === PHP_SESSION_NONE) {
 
 $username = isset($_SESSION['pos_admin']) ? $_SESSION['pos_admin'] : 'Unknown';
 $role_name = isset($_SESSION['role_name']) ? $_SESSION['role_name'] : 'Unknown';
+
+// Get company logo and name from settings
+$logo_sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'company_logo'";
+$logo_query = $dbh->prepare($logo_sql);
+$logo_query->execute();
+$company_logo = $logo_query->fetchColumn();
+
+$name_sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'store_name'";
+$name_query = $dbh->prepare($name_sql);
+$name_query->execute();
+$company_name = $name_query->fetchColumn() ?: 'POS System';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Access Denied | POS System</title>
+    <title>Access Denied | <?php echo htmlspecialchars($company_name); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <!-- App favicon -->
@@ -36,10 +47,26 @@ $role_name = isset($_SESSION['role_name']) ? $_SESSION['role_name'] : 'Unknown';
                         <div class="card">
                             <div class="card-body p-0 auth-header-box">
                                 <div class="text-center p-3">
+                                    <?php
+                                    // Get company logo and name from settings
+                                    $logo_sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'company_logo'";
+                                    $logo_query = $dbh->prepare($logo_sql);
+                                    $logo_query->execute();
+                                    $company_logo = $logo_query->fetchColumn();
+                                    
+                                    $name_sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'store_name'";
+                                    $name_query = $dbh->prepare($name_sql);
+                                    $name_query->execute();
+                                    $company_name = $name_query->fetchColumn() ?: 'POS System';
+                                    ?>
                                     <a href="javascript: void(0);" class="logo logo-admin">
-                                        <img src="template/assets/images/logo-sm.png" height="50" alt="Logo" class="auth-logo">
+                                        <?php if ($company_logo && file_exists($company_logo)): ?>
+                                            <img src="<?php echo htmlspecialchars($company_logo); ?>" height="50" alt="Company Logo" class="auth-logo">
+                                        <?php else: ?>
+                                            <img src="template/assets/images/logo-sm.png" height="50" alt="Logo" class="auth-logo">
+                                        <?php endif; ?>
                                     </a>
-                                    <h4 class="mt-3 mb-1 font-weight-semibold text-white font-18">Access Denied</h4>
+                                    <h4 class="mt-3 mb-1 font-weight-semibold text-white font-18"><?php echo htmlspecialchars($company_name); ?> - Access Denied</h4>
                                 </div>
                             </div>
                             <div class="card-body">

@@ -68,10 +68,15 @@ $db_last_update = !empty($result['last_update']) ? date('l, j F Y H:i a', strtot
                                 <div class="col">
                                     <h4 class="page-title">View Product</h4>
                                     <ol class="breadcrumb">
-                                        <li class="breadcrumb-item"><a href="javascript:void(0);"><i class="fa fa-home"></i></a></li>
-                                        <li class="breadcrumb-item">products</li>
-                                        <li class="breadcrumb-item active">View Product                                                                                                                                                                                                                                                     </li>
+                                        <li class="breadcrumb-item"><a href="dashboard.php">Home</a></li>
+                                        <li class="breadcrumb-item"><a href="all_products.php">Products</a></li>
+                                        <li class="breadcrumb-item active">View Product</li>
                                     </ol>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="all_products.php" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left mr-1"></i> Back to Products
+                                    </a>
                                 </div>
                             </div>
                         </div>

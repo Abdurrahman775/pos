@@ -27,10 +27,11 @@ if (isset($_POST['retrieve_id'])) {
         $query->bindParam(':id', $held_id, PDO::PARAM_INT);
         $query->execute();
 
-        // Redirect to sales window with cart data
+        // Note: sales_window.php has been deleted - redirecting to dashboard
+        // Cart data stored in session for when new sales window is implemented
         $_SESSION['retrieve_cart'] = $held['cart_data'];
         $_SESSION['retrieve_customer_id'] = $held['customer_id'];
-        header("Location: sales_window.php");
+        header("Location: dashboard.php");
         exit();
     }
 }
@@ -73,7 +74,6 @@ if (isset($_POST['delete_id'])) {
                             <h4 class="page-title">Held Transactions</h4>
                             <ol class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="dashboard.php">Home</a></li>
-                                <li class="breadcrumb-item"><a href="sales_window.php">POS</a></li>
                                 <li class="breadcrumb-item active">Held Transactions</li>
                             </ol>
                         </div>
@@ -95,11 +95,14 @@ if (isset($_POST['delete_id'])) {
                                     <div class="col">
                                         <h5 class="card-title mb-0">Incomplete Transactions</h5>
                                     </div>
+                                    <!-- New Sale button removed - sales_window.php has been deleted -->
+                                    <!--
                                     <div class="col-auto">
                                         <a href="sales_window.php" class="btn btn-primary">
                                             <i class="fas fa-plus"></i> New Sale
                                         </a>
                                     </div>
+                                    -->
                                 </div>
                             </div>
                             <div class="card-body">

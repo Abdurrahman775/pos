@@ -23,6 +23,7 @@ $is_user_active = in_array($current_page, $user_pages);
         </a>
     </li>
 
+
     <!-- Transactions -->
     <li class="<?php echo ($current_page == 'transactions.php') ? 'active' : ''; ?>">
         <a href="transactions.php" class="<?php echo ($current_page == 'transactions.php') ? 'active' : ''; ?>">
