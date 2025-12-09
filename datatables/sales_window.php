@@ -43,6 +43,9 @@ $query->bindValue(':length', $length, PDO::PARAM_INT);
 $query->execute();
 $products = $query->fetchAll(PDO::FETCH_ASSOC);
 
+// Cache currency symbol once for performance
+$currency = get_currency($dbh);
+
 // Format data for DataTables
 $data = [];
 $counter = $start + 1;
@@ -51,7 +54,7 @@ foreach ($products as $product) {
     $data[] = [
         $counter++,
         htmlspecialchars($product['name']),
-        get_currency($dbh) . number_format($product['selling_price'], 2),
+        $currency . number_format($product['selling_price'], 2),
         $product['qty_in_stock'],
         '<button class="btn btn-sm btn-primary" onclick="addtocart(' . $product['id'] . ')"><i class="fa fa-plus"></i></button>'
     ];

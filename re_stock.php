@@ -35,17 +35,27 @@ if (!$product) {
 // Handle stock update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_stock'])) {
     $new_stock = intval($_POST['new_stock']);
+    $supplier_id = isset($_POST['supplier_id']) && !empty($_POST['supplier_id']) ? intval($_POST['supplier_id']) : NULL;
     
     if ($new_stock <= 0) {
         $error = 'Please enter a valid quantity greater than 0';
     } else {
         try {
-            // Update stock
-            $sql = "UPDATE products SET qty_in_stock = qty_in_stock + :new_stock, updated_by = :updated_by WHERE id = :id";
-            $query = $dbh->prepare($sql);
-            $query->bindParam(':new_stock', $new_stock, PDO::PARAM_INT);
-            $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
-            $query->bindParam(':id', $id, PDO::PARAM_INT);
+            // Update stock and supplier if provided
+            if ($supplier_id !== NULL) {
+                $sql = "UPDATE products SET qty_in_stock = qty_in_stock + :new_stock, supplier_id = :supplier_id, updated_by = :updated_by WHERE id = :id";
+                $query = $dbh->prepare($sql);
+                $query->bindParam(':new_stock', $new_stock, PDO::PARAM_INT);
+                $query->bindParam(':supplier_id', $supplier_id, PDO::PARAM_INT);
+                $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                $query->bindParam(':id', $id, PDO::PARAM_INT);
+            } else {
+                $sql = "UPDATE products SET qty_in_stock = qty_in_stock + :new_stock, updated_by = :updated_by WHERE id = :id";
+                $query = $dbh->prepare($sql);
+                $query->bindParam(':new_stock', $new_stock, PDO::PARAM_INT);
+                $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                $query->bindParam(':id', $id, PDO::PARAM_INT);
+            }
 
             if ($query->execute()) {
                 log_activity($dbh, 'RESTOCK_PRODUCT', "Added $new_stock items to: {$product['name']} (ID: $id)");
@@ -125,6 +135,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_stock'])) {
                                 </div>
                                 
                                 <form method="POST" action="">
+                                    <div class="form-group">
+                                        <label for="supplier_id">Supplier (Optional)</label>
+                                        <select class="form-control" id="supplier_id" name="supplier_id">
+                                            <option value="">-- Keep Current Supplier --</option>
+                                            <?php
+                                            $sql = "SELECT id, supplier_name FROM suppliers ORDER BY supplier_name";
+                                            $query = $dbh->prepare($sql);
+                                            $query->execute();
+                                            $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
+                                            foreach ($suppliers as $supplier) {
+                                                $selected = ($product['supplier_id'] == $supplier['id']) ? 'selected' : '';
+                                                echo '<option value="' . $supplier['id'] . '" ' . $selected . '>' . htmlspecialchars($supplier['supplier_name']) . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                        <small class="form-text text-muted">Update the supplier if this restock is from a different supplier.</small>
+                                    </div>
+                                    
                                     <div class="form-group">
                                         <label for="new_stock">Quantity to Add <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control" id="new_stock" name="new_stock" min="1" required>

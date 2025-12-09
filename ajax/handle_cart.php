@@ -184,6 +184,9 @@ try {
             // Generate cart HTML
             $html = '';
             
+            // Cache currency symbol for performance
+            $currency = get_currency($dbh);
+            
             if (empty($_SESSION['cart'])) {
                 $html = '<tr><td colspan="6" class="text-center text-danger">Customer cart is empty!</td></tr>';
             } else {
@@ -211,9 +214,9 @@ try {
                     $html .= '<tr>';
                     $html .= '<td>' . ($index + 1) . '</td>';
                     $html .= '<td>' . htmlspecialchars($product['name']) . '</td>';
-                    $html .= '<td class="text-right">' . get_currency($dbh) . number_format($product['selling_price'], 2) . '</td>';
+                    $html .= '<td class="text-right">' . $currency . number_format($product['selling_price'], 2) . '</td>';
                     $html .= '<td><input type="number" min="1" value="' . $quantity . '" onchange="update_cart(' . $product_id . ', this.value)" style="width:60px; height:25px;" /></td>';
-                    $html .= '<td class="text-right">' . get_currency($dbh) . number_format($line_total, 2) . '</td>';
+                    $html .= '<td class="text-right">' . $currency . number_format($line_total, 2) . '</td>';
                     $html .= '<td class="text-center"><a href="javascript:del(' . $product_id . ')" title="Delete Item"><i class="fa fa-trash text-danger"></i></a></td>';
                     $html .= '</tr>';
                 }
@@ -222,7 +225,7 @@ try {
                 $html .= '<tr class="table-active">';
                 $html .= '<td colspan="3" class="font-weight-bold">TOTAL</td>';
                 $html .= '<td class="text-center font-weight-bold">' . $total_qty . '</td>';
-                $html .= '<td class="text-right font-weight-bold">' . get_currency($dbh) . number_format($subtotal, 2) . '</td>';
+                $html .= '<td class="text-right font-weight-bold">' . $currency . number_format($subtotal, 2) . '</td>';
                 $html .= '<td class="text-center"><a href="javascript:clearCart()" title="Clear Cart"><i class="fa fa-times-circle text-danger"></i></a></td>';
                 $html .= '</tr>';
                 
@@ -244,16 +247,16 @@ try {
                 $html .= '</div>';
                 
                 $html .= '<div class="form-group"><label><strong>Customer Type:</strong></label><br>';
-                $html .= '<input type="radio" name="customer_type" value="existing" checked> Existing &nbsp;&nbsp;';
-                $html .= '<input type="radio" name="customer_type" value="new"> New Customer</div>';
+                $html .= '<input type="radio" name="customer_type" value="new" checked> New Customer &nbsp;&nbsp;';
+                $html .= '<input type="radio" name="customer_type" value="existing"> Existing</div>';
                 
-                $html .= '<div id="existing_customer" class="form-group">';
+                $html .= '<div id="existing_customer" class="form-group" style="display:none;">';
                 $html .= '<label><strong>Select Customer:</strong></label>';
                 $html .= '<input type="text" id="customer_search" class="form-control" placeholder="Search customer..." autocomplete="off">';
                 $html .= '<input type="hidden" id="customer_id" name="customer_id">';
                 $html .= '</div>';
                 
-                $html .= '<div id="new_customer" class="form-group" style="display:none;">';
+                $html .= '<div id="new_customer" class="form-group">';
                 $html .= '<label><strong>Customer Name:</strong></label>';
                 $html .= '<input type="text" id="customer_name_new" name="customer_name_new" class="form-control" placeholder="Enter name">';
                 $html .= '</div>';
@@ -265,12 +268,12 @@ try {
                 
                 $html .= '<div class="form-group">';
                 $html .= '<label><strong>Change:</strong></label>';
-                $html .= '<div id="display_cash_change" class="h4 text-success">' . get_currency($dbh) . '0.00</div>';
+                $html .= '<div id="display_cash_change" class="h4 text-success">' . $currency . '0.00</div>';
                 $html .= '</div>';
                 
                 $html .= '<div class="form-group">';
                 $html .= '<label class="text-danger"><strong>Order Total:</strong></label>';
-                $html .= '<div id="display_order_total" class="h3 text-danger font-weight-bold">' . get_currency($dbh) . number_format($subtotal, 2) . '</div>';
+                $html .= '<div id="display_order_total" class="h3 text-danger font-weight-bold">' . $currency . number_format($subtotal, 2) . '</div>';
                 $html .= '<input type="hidden" id="hidden_order_total" value="' . $subtotal . '">';
                 $html .= '<input type="hidden" id="hidden_cash_change" name="hidden_cash_change">';
                 $html .= '</div>';

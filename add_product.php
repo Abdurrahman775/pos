@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     $product_name = ucfirst(trim($_POST['product_name']));
     $description = (trim($_POST['description']));
     $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 1;
+    $supplier_id = isset($_POST['supplier_id']) ? intval($_POST['supplier_id']) : NULL;
     $barcode = !empty(trim($_POST['barcode'])) ? (trim($_POST['barcode'])) : NULL;
     $cost_price = strtolower(trim($_POST['cost_price']));
     $selling_price = strtolower(trim($_POST['selling_price']));
@@ -72,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
     if (empty($errorMessages)) {
         try {
-            $sql = "INSERT INTO products (name, description, barcode, cost_price, selling_price, qty_in_stock, low_stock_alert, reg_by, reg_date, category_id, supplier_id, hasBatches, is_active) VALUES (:product_name, :description, :barcode, :cost_price, :selling_price, :qty_in_stock, :low_stock_alert, :reg_by, :reg_date, :category_id, 1, 0, 1)";
+            $sql = "INSERT INTO products (name, description, barcode, cost_price, selling_price, qty_in_stock, low_stock_alert, reg_by, reg_date, category_id, supplier_id, hasBatches, is_active) VALUES (:product_name, :description, :barcode, :cost_price, :selling_price, :qty_in_stock, :low_stock_alert, :reg_by, :reg_date, :category_id, :supplier_id, 0, 1)";
             $query = $dbh->prepare($sql);
             $query->bindParam(':product_name', $product_name, PDO::PARAM_STR);
             $query->bindParam(':description', $description, PDO::PARAM_STR);
@@ -84,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $query->bindParam(':reg_by', $admin, PDO::PARAM_STR);
             $query->bindParam(':reg_date', $now, PDO::PARAM_STR);
             $query->bindParam(':category_id', $category_id, PDO::PARAM_INT);
+            $query->bindParam(':supplier_id', $supplier_id, PDO::PARAM_INT);
             $query->execute();
 
             if ($query) {
@@ -298,6 +300,23 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                                                         $categories = $query->fetchAll(PDO::FETCH_ASSOC);
                                                         foreach ($categories as $cat) {
                                                             echo '<option value="' . $cat['id'] . '">' . htmlspecialchars($cat['name']) . '</option>';
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Supplier</label>
+                                                <div class="input-group mb-3">
+                                                    <select class="form-control form-control-sm" name="supplier_id" id="supplier_id">
+                                                        <option value="">-- Select Supplier --</option>
+                                                        <?php
+                                                        $sql = "SELECT id, supplier_name FROM suppliers ORDER BY supplier_name";
+                                                        $query = $dbh->prepare($sql);
+                                                        $query->execute();
+                                                        $suppliers = $query->fetchAll(PDO::FETCH_ASSOC);
+                                                        foreach ($suppliers as $supplier) {
+                                                            echo '<option value="' . $supplier['id'] . '">' . htmlspecialchars($supplier['supplier_name']) . '</option>';
                                                         }
                                                         ?>
                                                     </select>

@@ -53,6 +53,9 @@ if (!empty($requestData['search']['value'])) {
 }
 $query->execute();
 
+// Cache currency symbol once for performance
+$currency = get_currency($dbh);
+
 $data = array();
 while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
     $nestedData = array();
@@ -64,7 +67,7 @@ while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
     $nestedData[] = '<span class="badge badge-danger">' . $row['qty_in_stock'] . '</span>';
     $nestedData[] = $row['low_stock_alert'];
     $nestedData[] = '<span class="text-danger font-weight-bold">' . $shortage . '</span>';
-    $nestedData[] = get_currency($dbh) . number_format($row['selling_price'], 2);
+    $nestedData[] = $currency . number_format($row['selling_price'], 2);
     $token = base64_encode($row['id']);
     $actions = '<div class="dropdown d-inline-block">
                     <a class="dropdown-toggle arrow-none" title="Options" data-toggle="dropdown" href="javascript: void(0);"><i class="las la-ellipsis-v font-20"></i></a>

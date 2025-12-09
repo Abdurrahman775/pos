@@ -5,17 +5,29 @@ $now = date('Y-m-d h:i:s');
 // Current date
 $cdate = date('Y-m-d');
 
-// Get Currency
+// Get Currency (with session caching)
 function get_currency($dbh)
 {
+	// Check if currency is already cached in session
+	if (isset($_SESSION['currency'])) {
+		return $_SESSION['currency'];
+	}
+	
+	// Query database and cache the result
 	try {
 		$sql = "SELECT setting_value FROM system_settings WHERE setting_key = 'currency_code' LIMIT 1";
 		$query = $dbh->prepare($sql);
 		$query->execute();
 		$result = $query->fetch(PDO::FETCH_ASSOC);
-		return $result ? $result['setting_value'] : 'NGN';
+		$currency = $result ? $result['setting_value'] : 'NGN';
+		
+		// Cache in session for subsequent calls
+		$_SESSION['currency'] = $currency;
+		return $currency;
 	} catch (PDOException $e) {
-		return 'NGN'; // Fallback to NGN if query fails
+		// Fallback to NGN if query fails
+		$_SESSION['currency'] = 'NGN';
+		return 'NGN';
 	}
 }
 

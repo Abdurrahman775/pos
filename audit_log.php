@@ -193,12 +193,14 @@ $total_pages = ceil($total_logs / $per_page);
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="template/assets/js/jquery.min.js"></script>
     <script src="template/assets/js/bootstrap.bundle.min.js"></script>
     <script src="template/assets/js/metismenu.min.js"></script>
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
     <script src="template/assets/js/app.js"></script>
+
 </body>
 
 </html>

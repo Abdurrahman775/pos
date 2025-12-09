@@ -31,6 +31,13 @@ $is_user_active = in_array($current_page, $user_pages);
         </a>
     </li>
 
+    <!-- Virtual Account -->
+    <li class="<?php echo ($current_page == 'virtual_account.php') ? 'active' : ''; ?>">
+        <a href="virtual_account.php" class="<?php echo ($current_page == 'virtual_account.php') ? 'active' : ''; ?>">
+            <i data-feather="credit-card" class="align-self-center menu-icon"></i><span>Virtual Account</span>
+        </a>
+    </li>
+
     <!-- Products -->
     <li class="<?php echo $is_inventory_active ? 'active mm-active' : ''; ?>">
         <a href="javascript: void(0);" class="<?php echo $is_inventory_active ? 'active' : ''; ?>">
