@@ -261,6 +261,7 @@ try {
                 $html .= '<input type="text" id="customer_name_new" name="customer_name_new" class="form-control" placeholder="Enter name">';
                 $html .= '</div>';
                 
+                
                 $html .= '<div class="form-group">';
                 $html .= '<label><strong>Discount:</strong></label>';
                 $html .= '<input type="number" step="0.01" name="discount" id="discount" value="0" class="form-control">';

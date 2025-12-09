@@ -3,7 +3,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 // Define groups for parent menu activation
 $inventory_pages = ['add_product.php', 'all_products.php', 'manage_categories.php', 'manage_suppliers.php', 'low_stock_alerts.php', 'edit_product.php'];
-$customer_pages = ['customers.php', 'add_customer.php', 'edit_customer.php', 'customer_details.php'];
+$customer_pages = ['customers.php', 'edit_customer.php', 'customer_details.php'];
 $user_pages = ['add_admin.php', 'employees.php', 'edit_admin.php'];
 
 // Check active groups
@@ -70,9 +70,6 @@ $is_user_active = in_array($current_page, $user_pages);
         <ul class="nav-second-level <?php echo $is_customer_active ? 'in mm-show' : ''; ?>" aria-expanded="<?php echo $is_customer_active ? 'true' : 'false'; ?>">
             <li class="nav-item <?php echo ($current_page == 'customers.php' || $current_page == 'edit_customer.php' || $current_page == 'customer_details.php') ? 'active' : ''; ?>">
                 <a class="nav-link <?php echo ($current_page == 'customers.php' || $current_page == 'edit_customer.php' || $current_page == 'customer_details.php') ? 'active' : ''; ?>" href="customers.php"><i class="ti-control-record"></i>All Customers</a>
-            </li>
-            <li class="nav-item <?php echo ($current_page == 'add_customer.php') ? 'active' : ''; ?>">
-                <a class="nav-link <?php echo ($current_page == 'add_customer.php') ? 'active' : ''; ?>" href="add_customer.php"><i class="ti-control-record"></i>Add Customer</a>
             </li>
         </ul>
     </li>

@@ -370,6 +370,8 @@ $msg = "";
                     $('#new_customer').show();
                     $('#customer_name_new').focus();
                     $('#customer_id').val('');
+                    // Remove readonly when switching to new customer
+                    $('#customer_search').val('').prop('readonly', false).css('background-color', '');
                 }
             });
 
@@ -380,6 +382,8 @@ $msg = "";
                 select: function(event, ui) {
                     $("#customer_search").val(ui.item.label);
                     $("#customer_id").val(ui.item.id);
+                    // Make field readonly after selection
+                    $("#customer_search").prop('readonly', true).css('background-color', '#e9ecef');
                     return false;
                 }
             });
