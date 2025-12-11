@@ -3,6 +3,7 @@ session_start();
 require("../config.php");
 require("../include/functions.php");
 require("../include/authentication.php");
+require("../logger.php");
 
 header('Content-Type: application/json');
 
@@ -28,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $query->bindParam(':address', $address, PDO::PARAM_STR);
 
         if ($query->execute()) {
-            // log_activity($dbh, 'ADD_CUSTOMER', "Added new customer: $name");
+            log_activity($dbh, 'ADD_CUSTOMER', "Added new customer: $name");
             echo json_encode([
                 'status' => 'success',
                 'message' => 'Customer added successfully!',

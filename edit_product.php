@@ -3,6 +3,7 @@ require("config.php");
 require("include/functions.php");
 require("include/admin_authentication.php");
 require("include/admin_constants.php");
+require("logger.php");
 
 // Initialize variables
 $success = '';
@@ -100,6 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $query->execute();
 
             if ($query) {
+                // Log the activity
+                log_activity($dbh, 'UPDATE_PRODUCT', "Updated product: $product_name (ID: $product_id)");
+                
                 $success = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'Record updated successfully', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-success btn-sm' } } }); });</script>";
                 // Refresh product data
                 $sql = "SELECT * FROM products WHERE id= :id";

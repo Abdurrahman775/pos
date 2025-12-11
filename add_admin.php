@@ -4,6 +4,7 @@ require("include/functions.php");
 require("include/admin_authentication.php");
 require("include/admin_constants.php");
 require('include/functions_messaging.php');
+require("logger.php");
 
 // Initialize variables
 $success = '';
@@ -36,6 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
         if ($query == TRUE) {
             $fullname = !empty($mname) ? ($fname . ' ' . $mname . ' ' . $sname) : ($fname . ' ' . $sname);
+            
+            // Get role name for logging
+            $role_names = ['1' => 'Administrator', '2' => 'Manager', '3' => 'Cashier'];
+            $role_name = isset($role_names[$role_id]) ? $role_names[$role_id] : 'Unknown';
+            
+            // Log the activity
+            log_activity($dbh, 'ADD_ADMIN', "Created new admin user: $username ($fullname) - Role: $role_name");
+            
             $html_file = newUserEmail($dbh, $fullname, $username, $auto_password);
             //sendMail($dbh, $email, $subject= "New User Notification", $html_file, $linkAttachments= [], $stringAttachments= []);
 

@@ -3,6 +3,7 @@ require("config.php");
 require("include/functions.php");
 require("include/admin_authentication.php");
 require("include/admin_constants.php");
+require("logger.php");
 
 // Initialize variables
 $success = '';
@@ -89,6 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $query->execute();
 
             if ($query) {
+                // Log the activity
+                log_activity($dbh, 'ADD_PRODUCT', "Added new product: $product_name");
+                
                 $barcode = !empty($barcode) ? $barcode : null;
                 $success = "<script>$(function(){ bootbox.alert({ centerVertical: true, size: 'small', message: 'Record saved', buttons: { ok: { label: \"<i class='fa fa-check'></i> OK\", className: 'btn-success btn-sm' } } }); });</script>";
             } else {

@@ -8,6 +8,7 @@ require("config.php");
 require("include/functions.php");
 require("include/admin_authentication.php");
 require("include/admin_constants.php");
+require("logger.php");
 
 $customer_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $error = '';
@@ -47,6 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_customer'])) {
             $query->bindParam(':is_active', $is_active, PDO::PARAM_INT);
             $query->bindParam(':id', $customer_id, PDO::PARAM_INT);
             $query->execute();
+
+            // Log the activity
+            error_log("AUDIT LOG DEBUG: About to log customer update for: $name (ID: $customer_id)");
+            $log_result = log_activity($dbh, 'UPDATE_CUSTOMER', "Updated customer: $name (ID: $customer_id)");
+            error_log("AUDIT LOG DEBUG: Log result: " . ($log_result ? 'SUCCESS' : 'FAILED'));
 
             $success = 'Customer updated successfully!';
 

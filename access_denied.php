@@ -83,8 +83,9 @@ $company_name = $name_query->fetchColumn() ?: 'POS System';
                                     <p class="text-muted">If you believe you should have access to this resource, please contact your administrator.</p>
                                     
                                     <div class="mt-4">
+                                        <button onclick="history.back()" class="btn btn-secondary mr-2"><i class="fas fa-arrow-left mr-1"></i> Go Back</button>
                                         <a href="dashboard.php" class="btn btn-primary mr-2"><i class="fas fa-home mr-1"></i> Go to Dashboard</a>
-                                        <a href="logout.php" class="btn btn-secondary"><i class="fas fa-sign-out-alt mr-1"></i> Logout</a>
+                                        <a href="logout.php" class="btn btn-outline-secondary"><i class="fas fa-sign-out-alt mr-1"></i> Logout</a>
                                     </div>
                                 </div>
                             </div>

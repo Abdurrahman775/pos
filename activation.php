@@ -1,8 +1,8 @@
 <?php
-require('../config.php');
+require('config.php');
 require("include/functions.php");
-require("include/admin_authentication_temp.php");
-require("include/admin_constants_temp.php");
+require("include/admin_authentication.php");
+require("include/admin_constants.php");
 
 if ($_SERVER['REQUEST_METHOD'] == "POST") {
     $password = $_POST['password'];

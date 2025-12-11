@@ -355,6 +355,60 @@ foreach ($results as $row) {
                                 </div>
                             </div>
 
+
+                            <!-- Danger Zone -->
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="card-title mb-0"><i class="fas fa-exclamation-triangle mr-2"></i>Danger Zone</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        <strong>Warning:</strong> These operations can significantly affect your database. Use with caution!
+                                    </div>
+
+                                    <div class="row">
+                                        <!-- Database Backup -->
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 mb-3">
+                                                <h6 class="font-weight-bold"><i class="fas fa-download mr-2"></i>Database Backup</h6>
+                                                <p class="text-muted small">Download a complete backup of your database</p>
+                                                <button type="button" id="btn_backup" class="btn btn-info btn-block">
+                                                    <i class="fas fa-download mr-2"></i>Create Backup
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Database Restore -->
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 mb-3">
+                                                <h6 class="font-weight-bold"><i class="fas fa-upload mr-2"></i>Database Restore</h6>
+                                                <p class="text-muted small">Restore database from a backup file (SQL only, max 50MB)</p>
+                                                <input type="file" id="backup_file" accept=".sql" class="form-control-file mb-2" style="display: none;">
+                                                <button type="button" id="btn_choose_file" class="btn btn-secondary btn-block btn-sm mb-2">
+                                                    <i class="fas fa-file mr-2"></i>Choose File
+                                                </button>
+                                                <div id="file_name" class="text-muted small mb-2">No file selected</div>
+                                                <button type="button" id="btn_restore" class="btn btn-warning btn-block" disabled>
+                                                    <i class="fas fa-upload mr-2"></i>Restore from Backup
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Reset All Data -->
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 mb-3">
+                                                <h6 class="font-weight-bold"><i class="fas fa-trash-alt mr-2"></i>Reset All Data</h6>
+                                                <p class="text-muted small">Delete all data except users, categories, and settings</p>
+                                                <button type="button" id="btn_reset" class="btn btn-danger btn-block">
+                                                    <i class="fas fa-trash-alt mr-2"></i>Reset All Data
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group text-right">
                                 <button type="submit" name="save_settings" class="btn btn-primary btn-lg">
                                     <i class="fas fa-save mr-2"></i> Save Settings
@@ -375,7 +429,235 @@ foreach ($results as $row) {
     <script src="template/assets/js/metismenu.min.js"></script>
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
+    <script src="template/plugins/bootbox/bootbox.min.js"></script>
     <script src="template/assets/js/app.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // File chooser
+            $('#btn_choose_file').on('click', function() {
+                $('#backup_file').click();
+            });
+
+            // File selected handler
+            $('#backup_file').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    // Validate file type
+                    if (!file.name.toLowerCase().endsWith('.sql')) {
+                        bootbox.alert('Please select a SQL file');
+                        this.value = '';
+                        $('#file_name').text('No file selected');
+                        $('#btn_restore').prop('disabled', true);
+                        return;
+                    }
+                    
+                    // Validate file size (50MB)
+                    const maxSize = 50 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        bootbox.alert('File size exceeds 50MB limit');
+                        this.value = '';
+                        $('#file_name').text('No file selected');
+                        $('#btn_restore').prop('disabled', true);
+                        return;
+                    }
+                    
+                    $('#file_name').text(file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)');
+                    $('#btn_restore').prop('disabled', false);
+                } else {
+                    $('#file_name').text('No file selected');
+                    $('#btn_restore').prop('disabled', true);
+                }
+            });
+
+            // Backup Database
+            $('#btn_backup').on('click', function() {
+                const btn = $(this);
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Creating Backup...');
+
+                $.ajax({
+                    url: 'ajax/database_operations.php',
+                    method: 'POST',
+                    data: { action: 'backup' },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Download the backup file
+                            const link = document.createElement('a');
+                            link.href = 'ajax/download_backup.php?file=' + encodeURIComponent(response.filepath);
+                            link.download = response.filename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                            bootbox.alert({
+                                message: '<i class="fa fa-check-circle text-success"></i> ' + response.message,
+                                size: 'small'
+                            });
+                        } else {
+                            bootbox.alert('<i class="fa fa-times-circle text-danger"></i> ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        bootbox.alert('<i class="fa fa-times-circle text-danger"></i> Failed to create backup');
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html('<i class="fas fa-download mr-2"></i>Create Backup');
+                    }
+                });
+            });
+
+            // Restore Database
+            $('#btn_restore').on('click', function() {
+                const file = $('#backup_file')[0].files[0];
+                if (!file) {
+                    bootbox.alert('Please select a backup file first');
+                    return;
+                }
+
+                bootbox.confirm({
+                    message: '<div class="text-center"><i class="fas fa-exclamation-triangle text-warning" style="font-size: 48px;"></i></div>' +
+                             '<h5 class="mt-3">Restore Database?</h5>' +
+                             '<p>This will replace ALL current data with the backup file. This action cannot be undone!</p>' +
+                             '<p><strong>File:</strong> ' + file.name + '</p>',
+                    buttons: {
+                        cancel: {
+                            label: 'Cancel',
+                            className: 'btn-secondary'
+                        },
+                        confirm: {
+                            label: 'Yes, Restore',
+                            className: 'btn-danger'
+                        }
+                    },
+                    callback: function(result) {
+                        if (result) {
+                            const btn = $('#btn_restore');
+                            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Restoring...');
+
+                            const formData = new FormData();
+                            formData.append('action', 'restore');
+                            formData.append('backup_file', file);
+
+                            $.ajax({
+                                url: 'ajax/database_operations.php',
+                                method: 'POST',
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                dataType: 'json',
+                                success: function(response) {
+                                    if (response.status === 'success') {
+                                        bootbox.alert({
+                                            message: '<i class="fa fa-check-circle text-success"></i> ' + response.message,
+                                            callback: function() {
+                                                location.reload();
+                                            }
+                                        });
+                                    } else {
+                                        bootbox.alert('<i class="fa fa-times-circle text-danger"></i> ' + response.message);
+                                        btn.prop('disabled', false).html('<i class="fas fa-upload mr-2"></i>Restore from Backup');
+                                    }
+                                },
+                                error: function() {
+                                    bootbox.alert('<i class="fa fa-times-circle text-danger"></i> Failed to restore database');
+                                    btn.prop('disabled', false).html('<i class="fas fa-upload mr-2"></i>Restore from Backup');
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Reset All Data
+            $('#btn_reset').on('click', function() {
+                bootbox.confirm({
+                    message: '<div class="text-center"><i class="fas fa-exclamation-triangle text-danger" style="font-size: 48px;"></i></div>' +
+                             '<h5 class="mt-3">Reset All Data?</h5>' +
+                             '<p class="text-danger"><strong>This will permanently delete:</strong></p>' +
+                             '<ul class="text-left">' +
+                             '<li>All transactions</li>' +
+                             '<li>All products</li>' +
+                             '<li>All customers</li>' +
+                             '<li>All suppliers</li>' +
+                             '<li>All other transactional data</li>' +
+                             '</ul>' +
+                             '<p><strong>The following will be preserved:</strong></p>' +
+                             '<ul class="text-left text-success">' +
+                             '<li>Users (admins)</li>' +
+                             '<li>Categories</li>' +
+                             '<li>System settings</li>' +
+                             '</ul>' +
+                             '<p class="text-danger"><strong>This action cannot be undone!</strong></p>',
+                    buttons: {
+                        cancel: {
+                            label: 'Cancel',
+                            className: 'btn-secondary'
+                        },
+                        confirm: {
+                            label: 'I Understand, Proceed',
+                            className: 'btn-danger'
+                        }
+                    },
+                    callback: function(result) {
+                        if (result) {
+                            // Second confirmation
+                            bootbox.confirm({
+                                message: '<h5>Are you absolutely sure?</h5><p>Type <strong>RESET</strong> to confirm:</p>' +
+                                         '<input type="text" id="confirm_reset" class="form-control" placeholder="Type RESET">',
+                                buttons: {
+                                    cancel: {
+                                        label: 'Cancel',
+                                        className: 'btn-secondary'
+                                    },
+                                    confirm: {
+                                        label: 'Reset Data',
+                                        className: 'btn-danger'
+                                    }
+                                },
+                                callback: function(confirm) {
+                                    if (confirm) {
+                                        const confirmText = $('#confirm_reset').val();
+                                        if (confirmText !== 'RESET') {
+                                            bootbox.alert('Confirmation text does not match. Operation cancelled.');
+                                            return;
+                                        }
+
+                                        const btn = $('#btn_reset');
+                                        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Resetting...');
+
+                                        $.ajax({
+                                            url: 'ajax/database_operations.php',
+                                            method: 'POST',
+                                            data: { action: 'reset' },
+                                            dataType: 'json',
+                                            success: function(response) {
+                                                if (response.status === 'success') {
+                                                    bootbox.alert({
+                                                        message: '<i class="fa fa-check-circle text-success"></i> ' + response.message,
+                                                        callback: function() {
+                                                            location.reload();
+                                                        }
+                                                    });
+                                                } else {
+                                                    bootbox.alert('<i class="fa fa-times-circle text-danger"></i> ' + response.message);
+                                                    btn.prop('disabled', false).html('<i class="fas fa-trash-alt mr-2"></i>Reset All Data');
+                                                }
+                                            },
+                                            error: function() {
+                                                bootbox.alert('<i class="fa fa-times-circle text-danger"></i> Failed to reset data');
+                                                btn.prop('disabled', false).html('<i class="fas fa-trash-alt mr-2"></i>Reset All Data');
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

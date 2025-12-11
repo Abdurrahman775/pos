@@ -112,8 +112,13 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
                                                             class="btn btn-sm btn-primary" title="Edit">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
-                                                        <?php if ($user['username'] != 'admin'): // Prevent deleting super admin 
+                                                        <?php if ($user['username'] != 'admin'): // Prevent actions on super admin 
                                                         ?>
+                                                            <button class="btn btn-sm btn-warning"
+                                                                onclick="confirmResetPassword(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')"
+                                                                title="Reset Password">
+                                                                <i class="fas fa-key"></i>
+                                                            </button>
                                                             <button class="btn btn-sm btn-danger"
                                                                 onclick="confirmDelete(<?php echo $user['id']; ?>)"
                                                                 title="Deactivate">
@@ -172,6 +177,77 @@ $users = $query->fetchAll(PDO::FETCH_ASSOC);
                 callback: function(result) {
                     if (result) {
                         window.location.href = 'delete_admin.php?id=' + userId;
+                    }
+                }
+            });
+        }
+
+        function confirmResetPassword(userId, username) {
+            bootbox.confirm({
+                message: "Are you sure you want to reset password for <strong>" + username + "</strong>?<br><br>New password will be: <strong>user123</strong>",
+                buttons: {
+                    confirm: {
+                        label: 'Yes, Reset Password',
+                        className: 'btn-warning'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-secondary'
+                    }
+                },
+                callback: function(result) {
+                    if (result) {
+                        // Show loading message
+                        bootbox.dialog({
+                            message: '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Resetting password...</div>',
+                            closeButton: false
+                        });
+
+                        // Make AJAX call to reset password
+                        $.ajax({
+                            url: 'ajax/reset_password.php',
+                            type: 'POST',
+                            data: {
+                                user_id: userId
+                            },
+                            dataType: 'json',
+                            success: function(response) {
+                                bootbox.hideAll();
+                                if (response.success) {
+                                    bootbox.alert({
+                                        message: response.message,
+                                        buttons: {
+                                            ok: {
+                                                label: '<i class="fa fa-check"></i> OK',
+                                                className: 'btn-success'
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    bootbox.alert({
+                                        message: '<i class="fas fa-exclamation-triangle"></i> ' + response.message,
+                                        buttons: {
+                                            ok: {
+                                                label: 'OK',
+                                                className: 'btn-danger'
+                                            }
+                                        }
+                                    });
+                                }
+                            },
+                            error: function() {
+                                bootbox.hideAll();
+                                bootbox.alert({
+                                    message: '<i class="fas fa-exclamation-triangle"></i> An error occurred while resetting password',
+                                    buttons: {
+                                        ok: {
+                                            label: 'OK',
+                                            className: 'btn-danger'
+                                        }
+                                    }
+                                });
+                            }
+                        });
                     }
                 }
             });

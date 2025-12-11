@@ -244,6 +244,7 @@ require_permission('employees');
     <script src="template/assets/js/feather.min.js"></script>
     <script src="template/plugins/datatables/jquery.dataTables.min.js"></script>
     <script src="template/plugins/datatables/dataTables.bootstrap5.min.js"></script>
+    <script src="template/plugins/bootbox/bootbox.min.js"></script>
     <script src="template/assets/js/app.js"></script>
 
     <script>
@@ -453,6 +454,50 @@ require_permission('employees');
                     $(this).remove();
                 });
             }, 3000);
+        }
+
+        // Reset password function
+        function confirmResetPassword(userId, username) {
+            bootbox.confirm({
+                message: "Are you sure you want to reset password for <strong>" + username + "</strong>?<br><br>New password will be: <strong>user123</strong>",
+                centerVertical: true,
+                buttons: {
+                    confirm: {
+                        label: '<i class="fas fa-key"></i> Yes, Reset Password',
+                        className: 'btn-warning'
+                    },
+                    cancel: {
+                        label: '<i class="fas fa-times"></i> Cancel',
+                        className: 'btn-secondary'
+                    }
+                },
+                callback: function(result) {
+                    if (result) {
+                        // Show loading notification
+                        showNotification('Processing...', 'Resetting password for ' + username, 'info');
+
+                        // Make AJAX call to reset password
+                        $.ajax({
+                            url: 'ajax/reset_password.php',
+                            type: 'POST',
+                            data: {
+                                user_id: userId
+                            },
+                            dataType: 'json',
+                            success: function(response) {
+                                if (response.success) {
+                                    showNotification('Success!', response.message, 'success');
+                                } else {
+                                    showNotification('Error!', response.message, 'error');
+                                }
+                            },
+                            error: function() {
+                                showNotification('Error!', 'An error occurred while resetting password', 'error');
+                            }
+                        });
+                    }
+                }
+            });
         }
     </script>
 </body>

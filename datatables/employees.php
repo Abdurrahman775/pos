@@ -160,7 +160,33 @@ foreach ($results as $row) {
 
     // Actions
     $actions = '<a href="javascript:void(0)" onclick="viewEmployee(' . $row['id'] . ')" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a> ';
-    $actions .= '<a href="javascript:void(0)" onclick="editEmployee(' . $row['id'] . ')" class="btn btn-sm btn-primary" title="Edit"><i class="fas fa-edit"></i></a>';
+    $actions .= '<a href="javascript:void(0)" onclick="editEmployee(' . $row['id'] . ')" class="btn btn-sm btn-primary" title="Edit"><i class="fas fa-edit"></i></a> ';
+    
+    // Get logged-in user's role
+    $logged_in_role = isset($_SESSION['role_id']) ? $_SESSION['role_id'] : 0;
+    
+    // Add reset password button based on permissions:
+    // Administrator (role_id = 1): can reset Manager and Cashier passwords
+    // Manager (role_id = 2): can reset Cashier passwords only
+    // Cashier (role_id = 3): cannot reset any passwords
+    
+    $can_reset = false;
+    
+    if ($logged_in_role == 1) {
+        // Administrator can reset Manager (2) and Cashier (3) passwords
+        if ($row['role_id'] == 2 || $row['role_id'] == 3) {
+            $can_reset = true;
+        }
+    } elseif ($logged_in_role == 2) {
+        // Manager can reset Cashier (3) passwords only
+        if ($row['role_id'] == 3) {
+            $can_reset = true;
+        }
+    }
+    
+    if ($can_reset) {
+        $actions .= '<button onclick="confirmResetPassword(' . $row['id'] . ', \'' . htmlspecialchars($row['username']) . '\')" class="btn btn-sm btn-warning" title="Reset Password"><i class="fas fa-key"></i></button> ';
+    }
 
     $nestedData[] = $actions;
     $data[] = $nestedData;

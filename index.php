@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div class="text-center font-weight-bold mb-0 mt-0 font-15">Admin Login</div>
+                                <div class="text-center font-weight-bold mb-0 mt-0 font-15">Login</div>
                                 <!--                                     <ul class="nav-border nav nav-pills" role="tablist">
                                         <li class="nav-item">
                                             <a class="nav-link active font-weight-semibold" data-toggle="tab" href="#AdminLogIn_Tab" role="tab">Admin Login</a>

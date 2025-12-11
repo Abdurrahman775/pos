@@ -123,7 +123,7 @@ try {
     
     $html .= '<div style="text-align: center; margin-top: 20px; font-size: 11px;">';
     $html .= '<p>' . nl2br(htmlspecialchars($receipt_footer)) . '</p>';
-    $html .= '<p>** Keep this receipt for your records **</p>';
+    $html .= '<p>** Keep this receipt for your record **</p>';
     $html .= '</div>';
     
     $html .= '</div>';

@@ -31,7 +31,8 @@ $role_permissions = [
         'bulk_import',
         'employee_performance',
         'attendance',
-        'system_settings'
+        'system_settings',
+        'virtual_account'
     ],
     ROLE_MANAGER => [
         'dashboard',
@@ -42,16 +43,26 @@ $role_permissions = [
         'categories',
         'suppliers',
         'customers',
+        'employees',
         'reports',
+        'users',
+        'audit_log',
         'low_stock',
-        'bulk_import'
+        'bulk_import',
+        'employee_performance',
+        'virtual_account'
+        // Note: system_settings is intentionally excluded for managers
     ],
     ROLE_CASHIER => [
+        'dashboard',
         'pos',
-        'view_own_transactions',
+        'transactions',
         'change_password'
     ]
 ];
+
+// Declare as global to ensure accessibility across all scopes
+global $role_permissions;
 
 /**
  * Check if a user has permission to access a resource

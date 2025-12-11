@@ -22,27 +22,17 @@ function login_admin($dbh, $username, $password)
 		$hashedPassword = $result['password'];
 		$activation_status = $result['acct_activation'];
 
-		if (verifyHash($password, $hashedPassword)) {
-			initialize_session();
+	
+			if (verifyHash($password, $hashedPassword)) {
+				initialize_session();
 
-			// If there's an existing login session for a different user, clear it
-			if (isset($_SESSION['pos_admin']) && $_SESSION['pos_admin'] !== $username) {
-				clear_login_session();
-				regenerate_session();
-			}
-			// If there's an existing temporary activation session for a different user, clear it
-			if (isset($_SESSION['pos_admin_temp']) && $_SESSION['pos_admin_temp'] !== $username) {
-				clear_login_session();
-				regenerate_session();
-			}
+				// If there's an existing login session for a different user, clear it
+				if (isset($_SESSION['pos_admin']) && $_SESSION['pos_admin'] !== $username) {
+					clear_login_session();
+					regenerate_session();
+				}
 
-			if ($activation_status == 0) {
-				// User account not yet activated - set temporary session
-				$_SESSION['pos_admin_temp'] = $username;
-				regenerate_session();
-				go2("activation.php");
-			} else {
-				// User account is activated - get user details and set session
+				// Get user details and set session
 				$sql_admin = "SELECT id, role_id FROM admins WHERE username = :username";
 				$query_admin = $dbh->prepare($sql_admin);
 				$query_admin->bindParam(':username', $username, PDO::PARAM_STR);
@@ -73,8 +63,7 @@ function login_admin($dbh, $username, $password)
 				} else {
 					go2("dashboard.php");
 				}
-			}
-		} else {
+			} else {
 			$msg = "Invalid Username or Password";
 		}
 	} else {
