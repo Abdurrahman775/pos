@@ -5,12 +5,36 @@
  * Handles admin/user authentication
  */
 
-function login_admin($dbh, $username, $password)
+function login_admin($dbh, $username, $password, $ip_address = null)
 {
 	require_once(__DIR__ . '/session_manager.php');
 
 	$msg = NULL;
-	$username = strtolower($username);
+	$username = strtolower(trim($username));
+	
+	// Get IP address if not provided
+	if ($ip_address === null) {
+		$ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+	}
+	
+	// Input validation - check length limits
+	$username_check = validate_input_length($username, 100, 'Username');
+	if (!$username_check['valid']) {
+		log_login_attempt($dbh, $username, $ip_address, false);
+		return $username_check['message'];
+	}
+	
+	$password_check = validate_input_length($password, 255, 'Password');
+	if (!$password_check['valid']) {
+		log_login_attempt($dbh, $username, $ip_address, false);
+		return $password_check['message'];
+	}
+	
+	// Check rate limiting
+	$rate_limit = check_login_rate_limit($dbh, $username, $ip_address);
+	if (!$rate_limit['allowed']) {
+		return $rate_limit['message'];
+	}
 
 	$sql = "select username, password, acct_activation from admins where username= :username and is_active= 1";
 	$query = $dbh->prepare($sql);
@@ -24,6 +48,9 @@ function login_admin($dbh, $username, $password)
 
 	
 			if (verifyHash($password, $hashedPassword)) {
+				// Log successful attempt
+				log_login_attempt($dbh, $username, $ip_address, true);
+				
 				initialize_session();
 
 				// If there's an existing login session for a different user, clear it
@@ -64,9 +91,13 @@ function login_admin($dbh, $username, $password)
 					go2("dashboard.php");
 				}
 			} else {
+			// Log failed attempt
+			log_login_attempt($dbh, $username, $ip_address, false);
 			$msg = "Invalid Username or Password";
 		}
 	} else {
+		// Log failed attempt
+		log_login_attempt($dbh, $username, $ip_address, false);
 		$msg = "Invalid Username or Password";
 	}
 

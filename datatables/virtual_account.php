@@ -104,7 +104,13 @@ if (isset($_POST['order'])) {
     }
     
     $order = (strtoupper($_POST['order'][0]['dir']) === 'ASC') ? 'ASC' : 'DESC';
-    $sql .= " ORDER BY t." . $column_name . " " . $order;
+    
+    // Handle aliased columns
+    if ($column_name == 'customer_name' || $column_name == 'cashier_name') {
+        $sql .= " ORDER BY " . $column_name . " " . $order;
+    } else {
+        $sql .= " ORDER BY t." . $column_name . " " . $order;
+    }
 } else {
     $sql .= " ORDER BY t.created_at DESC";
 }
@@ -158,6 +164,8 @@ foreach ($results as $row) {
         $payment_badge = '<span class="badge badge-success">CASH</span>';
     } elseif ($row['payment_method'] == 'POS') {
         $payment_badge = '<span class="badge badge-primary">POS</span>';
+    } elseif ($row['payment_method'] == 'MIXED') {
+        $payment_badge = '<span class="badge badge-warning">MIXED</span>';
     } else {
         $payment_badge = '<span class="badge badge-secondary">' . ucfirst($row['payment_method']) . '</span>';
     }

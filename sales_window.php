@@ -267,7 +267,16 @@ $msg = "";
         // Update cart quantity
         function update_cart(product_id, qty) {
             qty = parseInt(qty);
-            if (qty < 0) return;
+            if (qty < 0) {
+                bootbox.alert({
+                    size: "small",
+                    message: "<i class='fa fa-times-circle text-danger'></i> Negative quantities are not accepted",
+                    callback: function() {
+                        refreshCart();
+                    }
+                });
+                return;
+            }
             
             $.ajax({
                 url: "ajax/handle_cart.php",
@@ -350,12 +359,20 @@ $msg = "";
         function setupCartHandlers() {
             // Payment type toggle
             $('input[name="payment_type"]').off('change').on('change', function() {
-                if ($(this).val() === 'CASH') {
+                var paymentType = $(this).val();
+                
+                if (paymentType === 'CASH') {
                     $('#cash_section').show();
                     $('#pos_section').hide();
-                } else {
+                    $('#mixed_section').hide();
+                } else if (paymentType === 'POS') {
                     $('#cash_section').hide();
                     $('#pos_section').show();
+                    $('#mixed_section').hide();
+                } else if (paymentType === 'MIXED') {
+                    $('#cash_section').hide();
+                    $('#pos_section').hide();
+                    $('#mixed_section').show();
                 }
             });
 
@@ -389,13 +406,62 @@ $msg = "";
             });
 
             // Cash change calculation
-            $('#cash_received, #discount').off('keyup').on('keyup', function() {
+            $('#cash_received, #discount, #mixed_pos_amount, #mixed_cash_amount').off('keyup').on('keyup', function() {
                 var cash_received = parseFloat($('#cash_received').val()) || 0;
                 var discount = parseFloat($('#discount').val()) || 0;
+                var mixed_pos_amount = parseFloat($('#mixed_pos_amount').val()) || 0;
+                var mixed_cash_amount = parseFloat($('#mixed_cash_amount').val()) || 0;
                 var order_total = parseFloat($('#hidden_order_total').val()) || 0;
                 
+                // Validate for negative values
+                if (cash_received < 0) {
+                    bootbox.alert({
+                        size: "small",
+                        message: "<i class='fa fa-times-circle text-danger'></i> Negative amounts are not accepted"
+                    });
+                    $('#cash_received').val('');
+                    return;
+                }
+                
+                if (discount < 0) {
+                    bootbox.alert({
+                        size: "small",
+                        message: "<i class='fa fa-times-circle text-danger'></i> Negative discount is not accepted"
+                    });
+                    $('#discount').val('0');
+                    return;
+                }
+                
+                if (mixed_pos_amount < 0) {
+                    bootbox.alert({
+                        size: "small",
+                        message: "<i class='fa fa-times-circle text-danger'></i> Negative POS amount is not accepted"
+                    });
+                    $('#mixed_pos_amount').val('');
+                    return;
+                }
+                
+                if (mixed_cash_amount < 0) {
+                    bootbox.alert({
+                        size: "small",
+                        message: "<i class='fa fa-times-circle text-danger'></i> Negative cash amount is not accepted"
+                    });
+                    $('#mixed_cash_amount').val('');
+                    return;
+                }
+                
                 var final_total = order_total - discount;
-                var cash_change = cash_received - final_total;
+                
+                // Calculate change based on payment type
+                var payment_type = $('input[name="payment_type"]:checked').val();
+                var cash_change = 0;
+                
+                if (payment_type === 'CASH') {
+                    cash_change = cash_received - final_total;
+                } else if (payment_type === 'MIXED') {
+                    var total_received = mixed_pos_amount + mixed_cash_amount;
+                    cash_change = total_received - final_total;
+                }
                 
                 $('#display_cash_change').text('<?php echo get_currency($dbh); ?>' + cash_change.toFixed(2));
                 $('#hidden_cash_change').val(cash_change);
@@ -409,6 +475,9 @@ $msg = "";
                 var payment_type = $('input[name="payment_type"]:checked').val();
                 var cash_received = $('#cash_received').val();
                 var payment_ref = $('#payment_ref').val();
+                var mixed_pos_ref = $('#mixed_pos_ref').val();
+                var mixed_pos_amount = $('#mixed_pos_amount').val();
+                var mixed_cash_amount = $('#mixed_cash_amount').val();
                 
                 if (payment_type == "CASH" && !cash_received) {
                     bootbox.alert("Please enter amount received");
@@ -418,6 +487,17 @@ $msg = "";
                 if (payment_type == "POS" && !payment_ref) {
                     bootbox.alert("Please enter payment reference");
                     return;
+                }
+                
+                if (payment_type == "MIXED") {
+                    if (!mixed_pos_ref) {
+                        bootbox.alert("Please enter POS reference number");
+                        return;
+                    }
+                    if (!mixed_pos_amount && !mixed_cash_amount) {
+                        bootbox.alert("Please enter at least one payment amount");
+                        return;
+                    }
                 }
                 
                 bootbox.confirm({
@@ -449,6 +529,9 @@ $msg = "";
                 payment_type: $('input[name="payment_type"]:checked').val(),
                 cash_received: $('#cash_received').val(),
                 payment_ref: $('#payment_ref').val(),
+                mixed_pos_ref: $('#mixed_pos_ref').val(),
+                mixed_pos_amount: $('#mixed_pos_amount').val(),
+                mixed_cash_amount: $('#mixed_cash_amount').val(),
                 customer_type: $('input[name="customer_type"]:checked').val(),
                 customer_id: $('#customer_id').val(),
                 customer_name_new: $('#customer_name_new').val(),

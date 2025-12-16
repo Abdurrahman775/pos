@@ -3,7 +3,6 @@ session_start();
 require("../config.php");
 require("../include/functions.php");
 require("../include/authentication.php");
-require("../logger.php");
 
 header('Content-Type: application/json');
 
@@ -20,6 +19,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     try {
+        // Check for duplicate phone
+        $check_sql = "SELECT COUNT(*) FROM customers WHERE phone = :phone";
+        $check_query = $dbh->prepare($check_sql);
+        $check_query->bindParam(':phone', $phone, PDO::PARAM_STR);
+        $check_query->execute();
+        if ($check_query->fetchColumn() > 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Phone number already exists. Please use a different phone number.']);
+            exit;
+        }
+        
+        // Check for duplicate email (only if provided)
+        if (!empty($email)) {
+            $check_sql = "SELECT COUNT(*) FROM customers WHERE email = :email";
+            $check_query = $dbh->prepare($check_sql);
+            $check_query->bindParam(':email', $email, PDO::PARAM_STR);
+            $check_query->execute();
+            if ($check_query->fetchColumn() > 0) {
+                echo json_encode(['status' => 'error', 'message' => 'Email already exists. Please use a different email.']);
+                exit;
+            }
+        }
+
+        // Insert customer
         $sql = "INSERT INTO customers (name, phone, email, address, created_at) 
                 VALUES (:name, :phone, :email, :address, NOW())";
         $query = $dbh->prepare($sql);

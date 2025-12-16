@@ -54,6 +54,33 @@ try {
     $pos_query->execute();
     $pos_result = $pos_query->fetch(PDO::FETCH_ASSOC);
     
+    // Get MIXED payments and extract individual amounts
+    $mixed_sql = "SELECT notes FROM transactions $where_clause AND payment_method = 'MIXED'";
+    $mixed_query = $dbh->prepare($mixed_sql);
+    foreach ($params as $key => $value) {
+        $mixed_query->bindValue($key, $value);
+    }
+    $mixed_query->execute();
+    $mixed_results = $mixed_query->fetchAll(PDO::FETCH_ASSOC);
+    
+    $mixed_cash_total = 0;
+    $mixed_pos_total = 0;
+    $mixed_count = count($mixed_results);
+    
+    foreach ($mixed_results as $row) {
+        $notes = $row['notes'];
+        
+        // Extract POS Amount from notes
+        if (preg_match('/POS Amount:\s*([\d,]+\.?\d*)/', $notes, $matches)) {
+            $mixed_pos_total += floatval(str_replace(',', '', $matches[1]));
+        }
+        
+        // Extract Cash Amount from notes
+        if (preg_match('/Cash Amount:\s*([\d,]+\.?\d*)/', $notes, $matches)) {
+            $mixed_cash_total += floatval(str_replace(',', '', $matches[1]));
+        }
+    }
+    
     // Get total count
     $total_sql = "SELECT COUNT(*) as count FROM transactions $where_clause";
     $total_query = $dbh->prepare($total_sql);
@@ -63,12 +90,12 @@ try {
     $total_query->execute();
     $total_result = $total_query->fetch(PDO::FETCH_ASSOC);
     
-    // Calculate totals
-    $cash_balance = floatval($cash_result['total']);
-    $cash_count = intval($cash_result['count']);
+    // Calculate totals including mixed payments
+    $cash_balance = floatval($cash_result['total']) + $mixed_cash_total;
+    $cash_count = intval($cash_result['count']) + $mixed_count;
     
-    $pos_balance = floatval($pos_result['total']);
-    $pos_count = intval($pos_result['count']);
+    $pos_balance = floatval($pos_result['total']) + $mixed_pos_total;
+    $pos_count = intval($pos_result['count']) + $mixed_count;
     
     $total_balance = $cash_balance + $pos_balance;
     $total_count = intval($total_result['count']);

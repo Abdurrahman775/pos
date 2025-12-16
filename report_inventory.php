@@ -83,8 +83,8 @@ foreach ($products as $p) {
     <link href="template/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
-    <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="template/plugins/datatables/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
+    <link href="template/plugins/datatables/responsive.bootstrap4.min.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body class="dark-sidenav">
@@ -204,25 +204,6 @@ foreach ($products as $p) {
                     </div>
                 </div>
 
-                <div class="row mb-4">
-                    <div class="col-md-8">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="header-title mt-0 mb-3">Stock Value by Category</h5>
-                                <canvas id="categoryChart" height="150"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="header-title mt-0 mb-3">Stock Status</h5>
-                                <canvas id="statusChart" height="200"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -283,103 +264,70 @@ foreach ($products as $p) {
     <script src="template/assets/js/metismenu.min.js"></script>
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
-    <script src="datatables/datatables.min.js"></script>
+    <script src="template/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="template/plugins/datatables/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
         $(document).ready(function() {
             $('#inventoryTable').DataTable({
-                dom: 'Bfrtip',
-                buttons: [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
-                ]
+                paging: true,
+                searching: true,
+                ordering: true,
+                pageLength: 25
             });
 
             // Export to Excel/CSV
-            $('#exportBtn').click(function() {
-                var table = $('#inventoryTable').DataTable();
-                var data = table.rows({
-                    search: 'applied'
-                }).data();
-
+            $('#exportBtn').click(function(e) {
+                e.preventDefault();
+                console.log('Export button clicked');
+                
+                // Check if XLSX library is loaded
+                if (typeof XLSX === 'undefined') {
+                    alert('Excel library not loaded. Please check your internet connection and refresh the page.');
+                    console.error('XLSX library is not loaded');
+                    return;
+                }
+                
+                console.log('XLSX library is loaded');
+                
                 var ws_data = [
                     ['Product Name', 'Category', 'Qty', 'Cost Price', 'Selling Price', 'Total Cost', 'Total Sales', 'Status']
                 ];
 
-                data.each(function(row) {
-                    ws_data.push([
-                        $(row[0]).text(),
-                        $(row[1]).text(),
-                        $(row[2]).text(),
-                        $(row[3]).text(),
-                        $(row[4]).text(),
-                        $(row[5]).text(),
-                        $(row[6]).text(),
-                        $(row[7]).text()
-                    ]);
+                // Get all rows from the table
+                var rowCount = 0;
+                $('#inventoryTable tbody tr').each(function() {
+                    var row = [];
+                    $(this).find('td').each(function(index) {
+                        if (index < 8) {
+                            var text = $(this).text().trim();
+                            row.push(text);
+                        }
+                    });
+                    if (row.length > 0) {
+                        ws_data.push(row);
+                        rowCount++;
+                    }
                 });
 
-                var ws = XLSX.utils.aoa_to_sheet(ws_data);
-                var wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-                XLSX.writeFile(wb, "inventory_report_<?php echo date('Y-m-d'); ?>.xlsx");
-            });
+                console.log('Found ' + rowCount + ' rows to export');
 
-            // Load Charts
-            $.ajax({
-                url: 'ajax/get_report_data.php',
-                data: {
-                    action: 'inventory_summary',
-                    category_id: <?php echo $category_id; ?>,
-                    stock_status: '<?php echo $stock_status; ?>'
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.status == 'success') {
-                        var data = response.data;
-
-                        // Category Chart
-                        new Chart(document.getElementById('categoryChart'), {
-                            type: 'bar',
-                            data: {
-                                labels: data.category_labels,
-                                datasets: [{
-                                    label: 'Stock Value',
-                                    data: data.category_values,
-                                    backgroundColor: '#44a2d2'
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-
-                        // Status Chart
-                        new Chart(document.getElementById('statusChart'), {
-                            type: 'pie',
-                            data: {
-                                labels: data.status_labels,
-                                datasets: [{
-                                    data: data.status_values,
-                                    backgroundColor: ['#03d87f', '#f5325c', '#ffc107']
-                                }]
-                            },
-                            options: {
-                                responsive: true
-                            }
-                        });
+                if (ws_data.length > 1) {
+                    try {
+                        var ws = XLSX.utils.aoa_to_sheet(ws_data);
+                        var wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+                        XLSX.writeFile(wb, "inventory_report_<?php echo date('Y-m-d'); ?>.xlsx");
+                        console.log('Export successful');
+                    } catch (error) {
+                        console.error('Export error:', error);
+                        alert('Error exporting data: ' + error.message);
                     }
+                } else {
+                    alert('No data to export');
+                    console.warn('No data found in table');
                 }
-            });
-
-            // Real-time search and filter
-            $('#filterForm').on('change', 'select', function() {
-                $('#filterForm').submit();
             });
         });
     </script>

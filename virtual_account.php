@@ -53,7 +53,7 @@ require("include/admin_authentication.php");
                                 <div class="row">
                                     <div class="col-4">
                                         <div class="avatar-md rounded-circle bg-soft-success">
-                                            <i data-feather="dollar-sign" class="align-self-center icon-dual-success icon-lg"></i>
+                                            <i class="fas fa-money-bill-wave align-self-center icon-dual-success icon-lg"></i>
                                         </div>
                                     </div>
                                     <div class="col-8 text-right">
@@ -247,13 +247,13 @@ require("include/admin_authentication.php");
                     dataType: 'json',
                     success: function(response) {
                         if (response.status == 'success') {
-                            $('#cash_balance').html('<?php echo get_currency($dbh); ?>' + parseFloat(response.data.cash_balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                            $('#cash_balance').html('<?php echo get_currency($dbh); ?> ' + parseFloat(response.data.cash_balance).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
                             $('#cash_count').text(response.data.cash_count + ' transactions');
                             
-                            $('#pos_balance').html('<?php echo get_currency($dbh); ?>' + parseFloat(response.data.pos_balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                            $('#pos_balance').html('<?php echo get_currency($dbh); ?> ' + parseFloat(response.data.pos_balance).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
                             $('#pos_count').text(response.data.pos_count + ' transactions');
                             
-                            $('#total_balance').html('<?php echo get_currency($dbh); ?>' + parseFloat(response.data.total_balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                            $('#total_balance').html('<?php echo get_currency($dbh); ?> ' + parseFloat(response.data.total_balance).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
                             $('#total_count').text(response.data.total_count + ' transactions');
                         }
                     },

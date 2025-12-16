@@ -210,9 +210,9 @@ require_permission('transactions');
                                             <label>Payment Method</label>
                                             <select class="form-control" id="payment_method">
                                                 <option value="">All Methods</option>
-                                                <option value="cash">Cash</option>
-                                                <option value="pos">POS</option>
-                                                <option value="transfer">Transfer</option>
+                                                <option value="CASH">Cash</option>
+                                                <option value="POS">POS</option>
+                                                <option value="MIXED">Mixed</option>
                                             </select>
                                         </div>
                                     </div>

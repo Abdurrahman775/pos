@@ -20,6 +20,9 @@ if (empty($_SESSION['cart'])) {
 $payment_type = isset($_POST['payment_type']) ? $_POST['payment_type'] : 'CASH';
 $cash_received = isset($_POST['cash_received']) ? floatval($_POST['cash_received']) : 0;
 $payment_ref = isset($_POST['payment_ref']) ? trim($_POST['payment_ref']) : '';
+$mixed_pos_ref = isset($_POST['mixed_pos_ref']) ? trim($_POST['mixed_pos_ref']) : '';
+$mixed_pos_amount = isset($_POST['mixed_pos_amount']) ? floatval($_POST['mixed_pos_amount']) : 0;
+$mixed_cash_amount = isset($_POST['mixed_cash_amount']) ? floatval($_POST['mixed_cash_amount']) : 0;
 $customer_type = isset($_POST['customer_type']) ? $_POST['customer_type'] : 'existing';
 $customer_id = isset($_POST['customer_id']) ? intval($_POST['customer_id']) : null;
 $customer_name_new = isset($_POST['customer_name_new']) ? trim($_POST['customer_name_new']) : '';
@@ -36,6 +39,17 @@ if ($payment_type === 'CASH' && $cash_received <= 0) {
 if ($payment_type === 'POS' && empty($payment_ref)) {
     echo json_encode(['status' => 'error', 'message' => 'Please enter payment reference']);
     exit;
+}
+
+if ($payment_type === 'MIXED') {
+    if (empty($mixed_pos_ref)) {
+        echo json_encode(['status' => 'error', 'message' => 'Please enter POS reference number']);
+        exit;
+    }
+    if ($mixed_pos_amount <= 0 && $mixed_cash_amount <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Please enter at least one payment amount']);
+        exit;
+    }
 }
 
 // Calculate totals
@@ -78,6 +92,17 @@ try {
     $notes = "Token: " . $transaction_token;
     if (!empty($walk_in_customer_name)) {
         $notes .= " | Customer: " . $walk_in_customer_name;
+    }
+    
+    // Add mixed payment details to notes if applicable
+    if ($payment_type === 'MIXED') {
+        $notes .= " | POS Ref: " . $mixed_pos_ref;
+        $notes .= " | POS Amount: " . number_format($mixed_pos_amount, 2);
+        $notes .= " | Cash Amount: " . number_format($mixed_cash_amount, 2);
+        // Set amount_paid to total of both payments
+        $cash_received = $mixed_pos_amount + $mixed_cash_amount;
+    } elseif ($payment_type === 'POS' && !empty($payment_ref)) {
+        $notes .= " | POS Ref: " . $payment_ref;
     }
     
     $sql = "INSERT INTO transactions (

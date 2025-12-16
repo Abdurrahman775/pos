@@ -181,8 +181,19 @@ foreach ($results as $row) {
     // Total (bold)
     $nestedData[] = '<strong>' . $currency . number_format($row['total_amount'], 2) . '</strong>';
 
-    // Payment Method
-    $nestedData[] = ucfirst($row['payment_method']);
+    // Payment Method with badge
+    $payment_method = $row['payment_method'];
+    $payment_badge = '';
+    if ($payment_method == 'CASH') {
+        $payment_badge = '<span class="badge badge-success">CASH</span>';
+    } elseif ($payment_method == 'POS') {
+        $payment_badge = '<span class="badge badge-primary">POS</span>';
+    } elseif ($payment_method == 'MIXED') {
+        $payment_badge = '<span class="badge badge-warning">MIXED</span>';
+    } else {
+        $payment_badge = '<span class="badge badge-secondary">' . ucfirst($payment_method) . '</span>';
+    }
+    $nestedData[] = $payment_badge;
 
     // Status Badge
     $status = $row['status'] ?? 'completed';

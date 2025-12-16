@@ -9,70 +9,77 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == "POST") {
+    $csrf_token = $_POST['csrf_token'] ?? '';
     $current_password = $_POST['current_password'] ?? '';
     $new_password1 = $_POST['new_password1'] ?? '';
     $new_password2 = $_POST['new_password2'] ?? '';
-
-    try {
-        // Validate inputs
-        if (empty($current_password) || empty($new_password1) || empty($new_password2)) {
-            $error = "All fields are required";
-        } elseif ($new_password1 !== $new_password2) {
-            $error = "New passwords do not match";
-        } elseif (strlen($new_password1) < 6) {
-            $error = "New password must be at least 6 characters long";
-        } else {
-            // Get current password hash from database
-            $sql = "SELECT password FROM admins WHERE username = :username";
-            $query = $dbh->prepare($sql);
-            $query->bindParam(':username', $_SESSION['pos_admin'], PDO::PARAM_STR);
-            $query->execute();
-            $result = $query->fetch(PDO::FETCH_ASSOC);
-
-            if (!$result) {
-                $error = "User not found";
-            } elseif (!password_verify($current_password, $result['password'])) {
-                $error = "Current password is incorrect";
+    
+    // Validate CSRF token
+    if (!validate_csrf_token($csrf_token)) {
+        $error = "Security token validation failed. Please refresh and try again.";
+    } else {
+        try {
+            // Validate inputs
+            if (empty($current_password) || empty($new_password1) || empty($new_password2)) {
+                $error = "All fields are required";
+            } elseif ($new_password1 !== $new_password2) {
+                $error = "New passwords do not match";
+            } elseif (strlen($new_password1) < 6) {
+                $error = "New password must be at least 6 characters long";
             } else {
-                // Hash new password
-                $hashed_password = password_hash($new_password1, PASSWORD_BCRYPT);
-
-                // Update password
-                $sql = "UPDATE admins SET password = :password WHERE username = :username";
+                // Get current password hash from database
+                $sql = "SELECT password FROM admins WHERE username = :username";
                 $query = $dbh->prepare($sql);
-                $query->bindParam(':password', $hashed_password, PDO::PARAM_STR);
                 $query->bindParam(':username', $_SESSION['pos_admin'], PDO::PARAM_STR);
                 $query->execute();
+                $result = $query->fetch(PDO::FETCH_ASSOC);
 
-                if ($query->rowCount() > 0) {
-                    // Log the activity
-                    log_activity($dbh, 'UPDATE', 'Changed password');
-                    
-                    $success = "<script>$(function() {
-                        bootbox.alert({
-                            centerVertical: true,
-                            size: 'small',
-                            title: 'Success',
-                            message: 'Password changed successfully. Please login again.',
-                            buttons: {
-                                ok: {
-                                    label: \"<i class='fa fa-check'></i> OK\",
-                                    className: 'btn-success btn-sm'
-                                }
-                            },
-                            callback: function () {
-                                window.location.replace('logout.php');
-                            }
-                        });
-                    });
-                    </script>";
+                if (!$result) {
+                    $error = "User not found";
+                } elseif (!password_verify($current_password, $result['password'])) {
+                    $error = "Current password is incorrect";
                 } else {
-                    $error = "Failed to update password. Please try again.";
+                    // Hash new password
+                    $hashed_password = password_hash($new_password1, PASSWORD_BCRYPT);
+
+                    // Update password
+                    $sql = "UPDATE admins SET password = :password WHERE username = :username";
+                    $query = $dbh->prepare($sql);
+                    $query->bindParam(':password', $hashed_password, PDO::PARAM_STR);
+                    $query->bindParam(':username', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                    $query->execute();
+
+                    if ($query->rowCount() > 0) {
+                        // Log the activity
+                        log_activity($dbh, 'UPDATE', 'Changed password');
+                        
+                        $success = "<script>$(function() {
+                            bootbox.alert({
+                                centerVertical: true,
+                                size: 'small',
+                                title: 'Success',
+                                message: 'Password changed successfully. Please login again.',
+                                buttons: {
+                                    ok: {
+                                        label: \"<i class='fa fa-check'></i> OK\",
+                                        className: 'btn-success btn-sm'
+                                    }
+                                },
+                                callback: function () {
+                                    window.location.replace('logout.php');
+                                }
+                            });
+                        });
+                        </script>";
+                    } else {
+                        $error = "Failed to update password. Please try again.";
+                    }
                 }
             }
+        } catch (PDOException $e) {
+            error_log("Password change error: " . $e->getMessage());
+            $error = "System error occurred. Please try again later.";
         }
-    } catch (PDOException $e) {
-        $error = "System error: " . $e->getMessage();
     }
 }
 ?>
@@ -118,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 centerVertical: true,
                 size: 'small',
                 title: 'Error',
-                message: '" . addslashes($error) . "',
+                message: ' . escape_js($error) . ',
                 buttons: {
                     ok: {
                         label: \"<i class='fa fa-times'></i> OK\",
@@ -165,6 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                                 <div class="row">
                                     <div class="col-lg-12">
                                         <form name="form1" id="form1" method="post" action="" autocomplete="off">
+                                            <?php echo csrf_token_field(); ?>
                                             <div class="form-group">
                                                 <label>Current Password <span class="text-danger">*</span></label>
                                                 <div class="input-group mb-3">

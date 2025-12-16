@@ -120,7 +120,7 @@ try {
             $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 0;
             
             if ($quantity < 0) {
-                echo json_encode(['status' => 'error', 'message' => 'Invalid quantity']);
+                echo json_encode(['status' => 'error', 'message' => 'Negative quantities are not accepted']);
                 exit;
             }
             
@@ -234,16 +234,26 @@ try {
                 $html .= '<div class="mt-3">';
                 $html .= '<div class="form-group"><label><strong>Payment Method:</strong></label><br>';
                 $html .= '<input type="radio" name="payment_type" value="CASH" id="payment_cash" checked> Cash &nbsp;&nbsp;';
-                $html .= '<input type="radio" name="payment_type" value="POS" id="payment_pos"> POS</div>';
+                $html .= '<input type="radio" name="payment_type" value="POS" id="payment_pos"> POS &nbsp;&nbsp;';
+                $html .= '<input type="radio" name="payment_type" value="MIXED" id="payment_mixed"> Mixed</div>';
                 
                 $html .= '<div id="cash_section" class="form-group">';
                 $html .= '<label><strong>Amount Received:</strong></label>';
-                $html .= '<input type="number" step="0.01" name="cash_received" id="cash_received" class="form-control" placeholder="Enter amount">';
+                $html .= '<input type="number" step="0.01" min="0" name="cash_received" id="cash_received" class="form-control" placeholder="Enter amount">';
                 $html .= '</div>';
                 
                 $html .= '<div id="pos_section" class="form-group" style="display:none;">';
                 $html .= '<label><strong>Reference Number:</strong></label>';
                 $html .= '<input type="text" name="payment_ref" id="payment_ref" class="form-control" placeholder="Enter reference">';
+                $html .= '</div>';
+                
+                $html .= '<div id="mixed_section" class="form-group" style="display:none;">';
+                $html .= '<label><strong>POS Reference Number:</strong></label>';
+                $html .= '<input type="text" name="mixed_pos_ref" id="mixed_pos_ref" class="form-control" placeholder="Enter POS reference">';
+                $html .= '<label class="mt-2"><strong>Amount Received from POS:</strong></label>';
+                $html .= '<input type="number" step="0.01" min="0" name="mixed_pos_amount" id="mixed_pos_amount" class="form-control" placeholder="Enter POS amount">';
+                $html .= '<label class="mt-2"><strong>Amount Received via Cash:</strong></label>';
+                $html .= '<input type="number" step="0.01" min="0" name="mixed_cash_amount" id="mixed_cash_amount" class="form-control" placeholder="Enter cash amount">';
                 $html .= '</div>';
                 
                 $html .= '<div class="form-group"><label><strong>Customer Type:</strong></label><br>';

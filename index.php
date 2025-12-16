@@ -3,6 +3,11 @@ require('config.php');
 require('include/functions.php');
 require('include/login.php');
 
+// Start session for CSRF token
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Initialize variables
 $error = '';
 $success = '';
@@ -10,29 +15,56 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
     if (isset($_POST['login_admin'])) {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
-
-        try {
-            $login = login_admin($dbh, $username, $password);
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        
+        // Validate CSRF token
+        if (!validate_csrf_token($csrf_token)) {
             $error = '<script>$(function() {
                 bootbox.alert({
                     centerVertical: true,
                     size: "small",
-                    message: "<span class=\'text-danger\'>' . $login . '</span>"
+                    message: "<span class=\'text-danger\'>Security token validation failed. Please try again.</span>"
                 });
             });
             </script>';
-        } catch (PDOException $e) {
-            $err = $e->getMessage();
-            $error = '<script>$(function() {
-                bootbox.alert({
-                    centerVertical: true,
-                    size: "small",
-                    message: "<span class=\'text-danger\'>System Error!</span>"
+        } else {
+            // Get user's IP address
+            $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            
+            try {
+                $login = login_admin($dbh, $username, $password, $ip_address);
+                
+                if ($login) {
+                    // Regenerate CSRF token after failed login
+                    regenerate_csrf_token();
+                    
+                    $error = '<script>$(function() {
+                        bootbox.alert({
+                            centerVertical: true,
+                            size: "small",
+                            message: "<span class=\'text-danger\'>' . escape_js($login) . '</span>"
+                        });
+                    });
+                    </script>';
+                }
+                // If login is successful, user is redirected by login_admin function
+            } catch (PDOException $e) {
+                // Regenerate CSRF token after error
+                regenerate_csrf_token();
+                
+                $err = $e->getMessage();
+                error_log("Login error: " . $err);
+                $error = '<script>$(function() {
+                    bootbox.alert({
+                        centerVertical: true,
+                        size: "small",
+                        message: "<span class=\'text-danger\'>System Error! Please try again later.</span>"
+                    });
                 });
-            });
-            </script>';
+                </script>';
+            }
         }
     }
 }
@@ -202,6 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                                 <div class="tab-content">
                                     <div class="tab-pane active p-3 pt-3" id="AdminLogIn_Tab" role="tabpanel">
                                         <form name="form1" id="form1" class="form-horizontal auth-form my-4" method="post" action="" autocomplete="off">
+                                            <?php echo csrf_token_field(); ?>
                                             <div class="form-group">
                                                 <label for="username">Username</label>
                                                 <div class="input-group mb-3">

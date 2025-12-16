@@ -1,4 +1,7 @@
 <?php
+// Include security helper functions
+require_once(__DIR__ . '/security.php');
+
 // Current date & time
 $now = date('Y-m-d h:i:s');
 

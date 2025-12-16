@@ -110,12 +110,48 @@ try {
     
     $html .= '<div style="border-top: 2px dashed #000; padding-top: 10px; font-size: 12px;">';
     $html .= '<div><strong>Payment:</strong> ' . $transaction['payment_method'] . '</div>';
+    
     if ($transaction['payment_method'] === 'CASH') {
         $html .= '<div><strong>Cash Received:</strong> ' . get_currency($dbh) . ' ' . number_format($transaction['amount_paid'], 2) . '</div>';
         $html .= '<div><strong>Change:</strong> ' . get_currency($dbh) . ' ' . number_format($transaction['change_amount'], 2) . '</div>';
-    } else {
-        if (!empty($transaction['notes'])) {
-            // Extract reference from notes if available
+    } elseif ($transaction['payment_method'] === 'MIXED') {
+        // Extract mixed payment details from notes
+        $notes = $transaction['notes'];
+        $pos_ref = '';
+        $pos_amount = 0;
+        $cash_amount = 0;
+        
+        if (preg_match('/POS Ref:\s*([^|]+)/', $notes, $matches)) {
+            $pos_ref = trim($matches[1]);
+        }
+        if (preg_match('/POS Amount:\s*([\d,]+\.?\d*)/', $notes, $matches)) {
+            $pos_amount = floatval(str_replace(',', '', $matches[1]));
+        }
+        if (preg_match('/Cash Amount:\s*([\d,]+\.?\d*)/', $notes, $matches)) {
+            $cash_amount = floatval(str_replace(',', '', $matches[1]));
+        }
+        
+        $html .= '<div style="margin-top: 5px;"><strong>Payment Breakdown:</strong></div>';
+        if ($pos_ref) {
+            $html .= '<div>POS Ref: ' . htmlspecialchars($pos_ref) . '</div>';
+        }
+        if ($pos_amount > 0) {
+            $html .= '<div>POS: ' . get_currency($dbh) . ' ' . number_format($pos_amount, 2) . '</div>';
+        }
+        if ($cash_amount > 0) {
+            $html .= '<div>Cash: ' . get_currency($dbh) . ' ' . number_format($cash_amount, 2) . '</div>';
+        }
+        $total_paid = $pos_amount + $cash_amount;
+        if ($total_paid > $transaction['total_amount']) {
+            $change = $total_paid - $transaction['total_amount'];
+            $html .= '<div><strong>Change:</strong> ' . get_currency($dbh) . ' ' . number_format($change, 2) . '</div>';
+        }
+    } elseif ($transaction['payment_method'] === 'POS') {
+        // Extract POS reference from notes if available
+        if (!empty($transaction['notes']) && preg_match('/POS Ref:\s*([^|]+)/', $transaction['notes'], $matches)) {
+            $pos_ref = trim($matches[1]);
+            $html .= '<div><strong>Reference:</strong> ' . htmlspecialchars($pos_ref) . '</div>';
+        } else {
             $html .= '<div><strong>Reference:</strong> Payment processed</div>';
         }
     }

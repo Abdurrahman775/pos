@@ -88,7 +88,7 @@ $total_profit = 0;
 $total_tax = 0;
 $total_discount = 0;
 $transaction_count = 0;
-$payment_summary = array('cash' => 0, 'pos' => 0, 'transfer' => 0, 'other' => 0);
+$payment_summary = array('cash' => 0, 'pos' => 0, 'mixed' => 0, 'other' => 0);
 $category_summary = array();
 $daily_summary = array();
 
@@ -171,7 +171,8 @@ $avg_transaction = $transaction_count > 0 ? $total_revenue / $transaction_count 
     <link href="template/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/metisMenu.min.css" rel="stylesheet" type="text/css" />
     <link href="template/assets/css/app.min.css" rel="stylesheet" type="text/css" />
-    <link href="datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+    <link href="template/plugins/datatables/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
+    <link href="template/plugins/datatables/responsive.bootstrap4.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
 </head>
@@ -309,15 +310,16 @@ $avg_transaction = $transaction_count > 0 ? $total_revenue / $transaction_count 
     <script src="template/assets/js/metismenu.min.js"></script>
     <script src="template/assets/js/waves.js"></script>
     <script src="template/assets/js/feather.min.js"></script>
-    <script src="datatables/datatables.min.js"></script>
+    <script src="template/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="template/plugins/datatables/dataTables.bootstrap5.min.js"></script>
     <script src="template/assets/js/app.js"></script>
     <script>
         $(document).ready(function() {
-            // Payment Method Chart
+            //Payment Method Chart
             var paymentData = {
                 'cash': <?php echo isset($payment_summary['cash']) ? $payment_summary['cash'] : 0; ?>,
                 'pos': <?php echo isset($payment_summary['pos']) ? $payment_summary['pos'] : 0; ?>,
-                'transfer': <?php echo isset($payment_summary['transfer']) ? $payment_summary['transfer'] : 0; ?>,
+                'mixed': <?php echo isset($payment_summary['mixed']) ? $payment_summary['mixed'] : 0; ?>,
                 'other': <?php echo isset($payment_summary['other']) ? $payment_summary['other'] : 0; ?>
             };
 

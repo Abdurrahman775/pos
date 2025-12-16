@@ -24,23 +24,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
     $email = trim($_POST['email']);
     $address = trim($_POST['address']);
 
+    // Validation
     if (empty($supplier_name)) {
         $error = 'Supplier name is required';
+    } elseif (empty($contact_name)) {
+        $error = 'Contact person name is required';
+    } elseif (empty($phone)) {
+        $error = 'Phone number is required';
+    } elseif (empty($address)) {
+        $error = 'Address is required';
     } else {
         try {
-            $sql = "INSERT INTO suppliers (supplier_name, contact_name, phone, email, address, reg_by, reg_date) 
-                    VALUES (:supplier_name, :contact_name, :phone, :email, :address, :reg_by, NOW())";
-            $query = $dbh->prepare($sql);
-            $query->bindParam(':supplier_name', $supplier_name, PDO::PARAM_STR);
-            $query->bindParam(':contact_name', $contact_name, PDO::PARAM_STR);
-            $query->bindParam(':phone', $phone, PDO::PARAM_STR);
-            $query->bindParam(':email', $email, PDO::PARAM_STR);
-            $query->bindParam(':address', $address, PDO::PARAM_STR);
-            $query->bindParam(':reg_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+            // Check for duplicate contact name
+            $check_sql = "SELECT COUNT(*) FROM suppliers WHERE contact_name = :contact_name";
+            $check_query = $dbh->prepare($check_sql);
+            $check_query->bindParam(':contact_name', $contact_name, PDO::PARAM_STR);
+            $check_query->execute();
+            if ($check_query->fetchColumn() > 0) {
+                $error = 'Contact person name already exists. Please use a different name.';
+            } else {
+                // Check for duplicate phone
+                $check_sql = "SELECT COUNT(*) FROM suppliers WHERE phone = :phone";
+                $check_query = $dbh->prepare($check_sql);
+                $check_query->bindParam(':phone', $phone, PDO::PARAM_STR);
+                $check_query->execute();
+                if ($check_query->fetchColumn() > 0) {
+                    $error = 'Phone number already exists. Please use a different phone number.';
+                } else {
+                    // Check for duplicate email (only if provided)
+                    if (!empty($email)) {
+                        $check_sql = "SELECT COUNT(*) FROM suppliers WHERE email = :email";
+                        $check_query = $dbh->prepare($check_sql);
+                        $check_query->bindParam(':email', $email, PDO::PARAM_STR);
+                        $check_query->execute();
+                        if ($check_query->fetchColumn() > 0) {
+                            $error = 'Email already exists. Please use a different email.';
+                        }
+                    }
+                    
+                    // If no errors, insert supplier
+                    if (empty($error)) {
+                        $sql = "INSERT INTO suppliers (supplier_name, contact_name, phone, email, address, reg_by, reg_date, updated_by) 
+                                VALUES (:supplier_name, :contact_name, :phone, :email, :address, :reg_by, NOW(), :updated_by)";
+                        $query = $dbh->prepare($sql);
+                        $query->bindParam(':supplier_name', $supplier_name, PDO::PARAM_STR);
+                        $query->bindParam(':contact_name', $contact_name, PDO::PARAM_STR);
+                        $query->bindParam(':phone', $phone, PDO::PARAM_STR);
+                        $query->bindParam(':email', $email, PDO::PARAM_STR);
+                        $query->bindParam(':address', $address, PDO::PARAM_STR);
+                        $query->bindParam(':reg_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
+                        $query->bindParam(':updated_by', $_SESSION['pos_admin'], PDO::PARAM_STR);
 
-            if ($query->execute()) {
-                log_activity($dbh, 'ADD_SUPPLIER', "Added supplier: $supplier_name");
-                $success = 'Supplier added successfully!';
+                        if ($query->execute()) {
+                            log_activity($dbh, 'ADD_SUPPLIER', "Added supplier: $supplier_name");
+                            $success = 'Supplier added successfully!';
+                        }
+                    }
+                }
             }
         } catch (PDOException $e) {
             $error = 'Error adding supplier: ' . $e->getMessage();
@@ -114,23 +154,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_supplier'])) {
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="contact_name">Contact Person</label>
-                                        <input type="text" class="form-control" id="contact_name" name="contact_name">
+                                        <label for="contact_name">Contact Person <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="contact_name" name="contact_name" required>
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="phone">Phone Number</label>
-                                        <input type="text" class="form-control" id="phone" name="phone">
+                                        <label for="phone">Phone Number <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="phone" name="phone" required>
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="email">Email Address</label>
+                                        <label for="email">Email Address <small class="text-muted">(Optional)</small></label>
                                         <input type="email" class="form-control" id="email" name="email">
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="address">Address</label>
-                                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                                        <label for="address">Address <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
                                     </div>
 
                                     <button type="submit" name="add_supplier" class="btn btn-primary btn-block">

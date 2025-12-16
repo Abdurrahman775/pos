@@ -110,21 +110,25 @@ if ($action == 'financials') {
     $cat_values = [];
     foreach ($cat_results as $row) {
         $cat_labels[] = $row['category'] ? $row['category'] : 'Uncategorized';
-        $cat_values[] = $row['value'];
+        $cat_values[] = floatval($row['value']);
     }
 
-    // Get stock status
-    $low_stock = get_low_stock_count($dbh);
-    $total_products = $dbh->query("SELECT COUNT(*) FROM products WHERE is_active = 1")->fetchColumn();
-    $in_stock = $total_products - $low_stock;
+    // Get stock status - properly categorized
+    $sql_in_stock = "SELECT COUNT(*) FROM products WHERE is_active = 1 AND qty_in_stock > low_stock_alert";
+    $sql_low_stock = "SELECT COUNT(*) FROM products WHERE is_active = 1 AND qty_in_stock > 0 AND qty_in_stock <= low_stock_alert";
+    $sql_out_stock = "SELECT COUNT(*) FROM products WHERE is_active = 1 AND qty_in_stock = 0";
+    
+    $in_stock = $dbh->query($sql_in_stock)->fetchColumn();
+    $low_stock = $dbh->query($sql_low_stock)->fetchColumn();
+    $out_stock = $dbh->query($sql_out_stock)->fetchColumn();
 
     $response = [
         'status' => 'success',
         'data' => [
             'category_labels' => $cat_labels,
             'category_values' => $cat_values,
-            'status_labels' => ['In Stock', 'Low Stock'],
-            'status_values' => [$in_stock, $low_stock]
+            'status_labels' => ['In Stock', 'Low Stock', 'Out of Stock'],
+            'status_values' => [intval($in_stock), intval($low_stock), intval($out_stock)]
         ]
     ];
 
